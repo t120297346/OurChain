@@ -1,0 +1,8 @@
+{
+	"files.associations": {
+		"stdio.h": "c",
+		"ourcontract.h": "c",
+		"ios": "c",
+		"stdint.h": "c"
+	}
+}
