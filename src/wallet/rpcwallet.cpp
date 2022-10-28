@@ -27,9 +27,11 @@
 #include "wallet/feebumper.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
+#include "warnings.h"
 
-#include <stdint.h>
 #include <fstream>
+#include <stdint.h>
+#include <sys/wait.h>
 
 #include <univalue.h>
 
@@ -2050,13 +2052,18 @@ UniValue gettransaction(const JSONRPCRequest& request)
     if (wtx.tx->contract.action == contract_action::ACTION_NEW) {
         entry.push_back(Pair("contract_action", "ACTION_NEW"));
         entry.push_back(Pair("contract_address", wtx.tx->contract.address.GetHex()));
+        entry.push_back(Pair("contract_code", wtx.tx->contract.code));
         entry.push_back(Pair("contract_code_size", (uint64_t)(wtx.tx->contract.code.size())));
         entry.push_back(Pair("contract_args_size", (uint64_t)(wtx.tx->contract.args.size())));
     } else if (wtx.tx->contract.action == contract_action::ACTION_CALL) {
         entry.push_back(Pair("contract_action", "ACTION_CALL"));
         entry.push_back(Pair("contract_callee", wtx.tx->contract.address.GetHex()));
         entry.push_back(Pair("contract_args_size", (uint64_t)(wtx.tx->contract.args.size())));
-
+	    std::string argvs = "";
+	    for(int i = 0; i < wtx.tx->contract.args.size(); i++){
+	        argvs += wtx.tx->contract.args[i] + " ";
+	    }
+        entry.push_back(Pair("contract_args", argvs));
     }
 
     entry.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
@@ -3254,13 +3261,30 @@ static void SendContractTx(CWallet * const pwallet, const Contract *contract, co
 
 static bool ReadFile(const std::string &filename, std::string &buf)
 {
-    std::string line;
-    std::ifstream file(filename);
+    if((filename.find("http") < filename.length()) && (filename.find("http") >= 0)){
+        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.c";
+        system(command.c_str());    
 
-    if (file.is_open() == false) return false;
-    while (getline(file, line)) buf += (line + "\n");
-    file.close();
-    return true;
+        std::string line;
+        std::ifstream file(GetDataDir().string() + "/code.c");
+        if (file.is_open() == false) return false;
+        while (getline(file, line)) buf += (line + "\n");
+        file.close();
+
+        command = "rm " + GetDataDir().string() + "/code.c";
+        system(command.c_str());
+        return true;
+    }
+    else {
+        std::string line;
+        std::ifstream file(filename);
+
+        if (file.is_open() == false) return false;
+        while (getline(file, line)) buf += (line + "\n");
+        file.close();
+        return true;
+    }
+
 }
 
 UniValue deploycontract(const JSONRPCRequest& request)
@@ -3291,6 +3315,7 @@ UniValue deploycontract(const JSONRPCRequest& request)
     if (ReadFile(request.params[0].get_str(), contract.code) == false) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "File does not exist.");
     }
+
     contract.action = contract_action::ACTION_NEW;
     if (request.params.size() > 1) {
         for (unsigned i = 1; i < request.params.size(); i++)
@@ -3354,7 +3379,7 @@ UniValue callcontract(const JSONRPCRequest& request)
     Contract contract;
     contract.action = contract_action::ACTION_CALL;
     contract.address = uint256S(request.params[0].get_str());
-    if (request.params.size() > 1) { 
+    if (request.params.size() > 1) {
         for (unsigned i = 1; i < request.params.size(); i++)
             contract.args.push_back(request.params[i].get_str());
     }

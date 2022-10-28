@@ -14,3 +14,8 @@ OurContract
 -----------
 
 See [doc/ourcontract.md](doc/ourcontract.md).
+
+
+ChangingLog
+-----------
+src/wallet/rpcwallet.cpp --> ReadFile
