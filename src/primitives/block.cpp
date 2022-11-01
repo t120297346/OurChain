@@ -10,9 +10,22 @@
 #include "utilstrencodings.h"
 #include "crypto/common.h"
 
+//b04902091
 uint256 CBlockHeader::GetHash() const
 {
-    return SerializeHash(*this);
+        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
+        
+        ss<<nVersion<<hashPrevBlock<<hashMerkleRoot<<nTime<<nBits<<nNonce<<nTimeNonce<<maxhash;
+        
+        return ss.GetHash();
+}
+uint256 CBlockHeader::GetHash2() const
+{
+        CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
+        
+        ss<<nVersion<<hashPrevBlock<<hashMerkleRoot2<<nTime<<nBits<<nNonce2<<nTimeNonce2<<maxhash2;
+        
+        return ss.GetHash();
 }
 
 std::string CBlock::ToString() const

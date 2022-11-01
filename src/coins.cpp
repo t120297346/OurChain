@@ -8,6 +8,7 @@
 #include "memusage.h"
 #include "random.h"
 #include "script/script.h"
+#include "warnings.h"
 
 #include <assert.h>
 
@@ -253,6 +254,8 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CContStateMap &mapContStat
         CCoinsMap::iterator itOld = it++;
         mapCoins.erase(itOld);
     }
+    // This will make slow???
+    
     for (CContStateMap::iterator it = mapContState.begin(); it != mapContState.end();) {
         CContStateMap::iterator itUs = cacheContState.find(it->first);
         if (itUs == cacheContState.end()) {
@@ -270,6 +273,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, CContStateMap &mapContStat
         CContStateMap::iterator itOld = it++;
         mapContState.erase(itOld);
     }
+    
     hashBlock = hashBlockIn;
     return true;
 }

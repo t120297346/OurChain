@@ -323,6 +323,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nFile          = diskindex.nFile;
                 pindexNew->nDataPos       = diskindex.nDataPos;
                 pindexNew->nUndoPos       = diskindex.nUndoPos;
+                pindexNew->nArrivalTime   = diskindex.nArrivalTime;
                 pindexNew->nVersion       = diskindex.nVersion;
                 pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
                 pindexNew->nTime          = diskindex.nTime;
@@ -330,7 +331,14 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
-
+                pindexNew->nTimeNonce     = diskindex.nTimeNonce;
+                pindexNew->maxhash        = diskindex.maxhash;
+                pindexNew->nTimeNonce2    = diskindex.nTimeNonce2;
+                pindexNew->maxhash2       = diskindex.maxhash2;
+                pindexNew->hashMerkleRoot2= diskindex.hashMerkleRoot2;
+                pindexNew->nNonce2        = diskindex.nNonce2;
+            
+//b04902091
                 if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
                     return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
 

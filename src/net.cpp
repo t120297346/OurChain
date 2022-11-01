@@ -22,6 +22,8 @@
 #include "ui_interface.h"
 #include "utilstrencodings.h"
 
+#include "warnings.h"
+
 #ifdef WIN32
 #include <string.h>
 #else
@@ -1627,17 +1629,6 @@ void CConnman::ThreadDNSAddressSeed()
 
     LogPrintf("%d addresses found from DNS seeds\n", found);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 void CConnman::DumpAddresses()
 {

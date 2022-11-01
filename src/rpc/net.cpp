@@ -622,6 +622,74 @@ UniValue setnetworkactive(const JSONRPCRequest& request)
     return g_connman->GetNetworkActive();
 }
 
+
+UniValue setmainnet(const JSONRPCRequest& request){
+    int sockfd, read_byte;
+    struct sockaddr_in addr;
+    char buffer[1024] = {}, ips[2048] = {};
+
+    unsigned char magic_bytes[4];
+    memcpy(magic_bytes, Params().MessageStart(), sizeof(magic_bytes));
+
+    LogPrintf("Magic Bytes: %d.%d.%d.%d\n", magic_bytes[0], magic_bytes[1], magic_bytes[2], magic_bytes[3]);
+
+    // Get socket file descriptor
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        memcpy(buffer, "socket failed", sizeof(buffer));
+        return buffer;
+    }
+
+    // Set server address
+    bzero(&addr,sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr("140.112.90.168");
+    addr.sin_port = htons(8787);
+
+    // Connect to the server
+    if(connect(sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0){
+        memcpy(buffer, "connect failed", sizeof(buffer));
+	    return buffer;
+    }
+   
+    // Receive message from server
+    if((read_byte = read(sockfd, buffer, sizeof(buffer) - 1)) < 0){
+        memcpy(buffer, "receive failed", sizeof(buffer));
+	    return buffer;
+    }
+
+    send(sockfd, magic_bytes, sizeof(magic_bytes) / sizeof(unsigned char), 0); 
+
+    // Get IPs
+    if((read_byte = read(sockfd, ips, sizeof(ips) - 1)) < 0){
+        memcpy(buffer, "receive failed", sizeof(buffer));
+        return buffer;
+    }
+    close(sockfd);
+
+    
+    char res_message[20];
+    int found = 0;
+    
+    if(strcmp(ips, "null") != 0) {
+        if(!g_connman)
+                throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+        int delim = 0;
+        for(int i = 0; i < strlen(ips); i++) {
+            if(ips[i] == ',') {
+                char buffer[i - delim];
+                memcpy(buffer, ips + delim, i - delim);
+                delim = i + 1;
+                CAddress addr;
+                g_connman->OpenNetworkConnection(addr, false, nullptr, buffer);
+                found++;
+            }
+        }
+    }
+    sprintf(res_message, "Found %d IPs!", found);
+    return res_message;
+
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
@@ -637,6 +705,7 @@ static const CRPCCommand commands[] =
     { "network",            "listbanned",             &listbanned,             true,  {} },
     { "network",            "clearbanned",            &clearbanned,            true,  {} },
     { "network",            "setnetworkactive",       &setnetworkactive,       true,  {"state"} },
+    { "network",            "setmainnet",       &setmainnet,       true,  {} },
 };
 
 void RegisterNetRPCCommands(CRPCTable &t)

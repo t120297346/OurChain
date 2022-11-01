@@ -50,6 +50,11 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/thread.hpp>
 
+//b04902091
+#include "EPow.h"
+#include <stdio.h>
+//b04902091
+
 #if defined(NDEBUG)
 # error "Bitcoin cannot be compiled without assertions."
 #endif
@@ -98,21 +103,74 @@ const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 // Internal stuff
 namespace {
 
+    /** Ourcoin finality implementation. */
+    int64_t round_start_time = 0;
+    uint256 round_parent;
+
+    bool IsBroadcastDelayedBlock(const CBlockIndex *pindex) {
+        // Block finish time and arrival time differ too much!
+        int64_t diff = pindex->GetBlockFinishTime() - pindex->GetArrivalTime();
+        if (diff > ROUND_INTERVAL || diff < -ROUND_INTERVAL) return true;
+        return false;
+    }
+
+    bool IsRoundExpired() {
+        if (GetAdjustedTime() >= round_start_time + ROUND_INTERVAL) return true;
+        return false;
+    }
+
+    bool IsCurrentRoundBlock(const CBlockIndex *pindex) {
+        if (pindex->GetBlockFinishTime() >= round_start_time &&
+            pindex->GetBlockFinishTime() < round_start_time + ROUND_INTERVAL &&
+            pindex->pprev != nullptr &&
+            pindex->pprev->GetBlockHash() == round_parent) return true;
+        return false;
+    }
+
+    bool IsNextRoundBlock(const CBlockIndex *pindex) {
+        if (pindex->GetBlockFinishTime() >= round_start_time + ROUND_INTERVAL &&
+            pindex->pprev != nullptr &&
+            pindex->pprev->GetBlockHash() == chainActive.Tip()->GetBlockHash()) return true;
+        return false;
+    }
+
+    void UpdateRound(const CBlockIndex *pindex) {
+        round_start_time = pindex->GetBlockTime();
+        round_parent = pindex->pprev->GetBlockHash();
+    }
+
+    bool AbsoluteTimeComparator(const CBlockIndex *pa, const CBlockIndex *pb) {
+        // First sort by earliest time mined (needs finish_time implemented), ...
+        if (pa->GetBlockFinishTime() < pb->GetBlockFinishTime()) return false;
+        if (pa->GetBlockFinishTime() > pb->GetBlockFinishTime()) return true;
+
+        // ... then by most total EPoW (needs EPoW implemented), ...
+	CBlockHeader ba, bb;
+	ba = pa->GetBlockHeader();
+        bb = pb->GetBlockHeader();
+        if (UintToArith256(GetEPow(ba.GetHash2(), ba.GetHash())) < UintToArith256(GetEPow(bb.GetHash2(), bb.GetHash()))) return false;
+        if (UintToArith256(GetEPow(ba.GetHash2(), ba.GetHash())) > UintToArith256(GetEPow(bb.GetHash2(), bb.GetHash()))) return true;
+
+        // Use pointer address as tie breaker (should only happen with blocks
+        // loaded from disk, as those all have id 0).
+        if (pa < pb) return false;
+        if (pa > pb) return true;
+
+        // Identical blocks.
+        return false;
+    }
+
     struct CBlockIndexWorkComparator
     {
         bool operator()(const CBlockIndex *pa, const CBlockIndex *pb) const {
-            // First sort by most total work, ...
+            // The two blocks are in the same round.
+            if (pa->pprev != nullptr && pb->pprev != nullptr &&
+                pa->pprev->GetBlockHash() == pb->pprev->GetBlockHash())
+                return AbsoluteTimeComparator(pa, pb);
+
+            // Latest round first.
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
-
-            // ... then by earliest time received, ...
-            if (pa->nSequenceId < pb->nSequenceId) return false;
-            if (pa->nSequenceId > pb->nSequenceId) return true;
-
-            // Use pointer address as tie breaker (should only happen with blocks
-            // loaded from disk, as those all have id 0).
-            if (pa < pb) return false;
-            if (pa > pb) return true;
 
             // Identical blocks.
             return false;
@@ -1512,7 +1570,7 @@ static DisconnectResult DisconnectBlock(const CBlock& block, const CBlockIndex* 
         }
 
         // restore inputs
-        if (i > 0) { // not coinbases
+        if (i > 1) { // not coinbases
             CTxUndo &txundo = blockUndo.vtxundo[i-1];
             if (txundo.vprevout.size() != tx.vin.size()) {
                 error("DisconnectBlock(): transaction and undo data inconsistent");
@@ -2003,8 +2061,10 @@ bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState &
             if (!CheckDiskSpace(48 * 2 * 2 * pcoinsTip->GetCacheSize()))
                 return state.Error("out of disk space");
             // Flush the chainstate (which may refer to block index entries).
+	    LogPrintf("Here make contract Slow\n");
             if (!pcoinsTip->Flush())
                 return AbortNode(state, "Failed to write to coin database");
+	    LogPrintf("END\n");
             nLastFlush = nNow;
         }
     }
@@ -2395,7 +2455,7 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
         // Connect new blocks.
         for (CBlockIndex *pindexConnect : reverse_iterate(vpindexToConnect)) {
             if (!ConnectTip(state, chainparams, pindexConnect, pindexConnect == pindexMostWork ? pblock : std::shared_ptr<const CBlock>(), connectTrace, disconnectpool)) {
-                if (state.IsInvalid()) {
+		if (state.IsInvalid()) {
                     // The block violates a consensus rule.
                     if (!state.CorruptionPossible())
                         InvalidChainFound(vpindexToConnect.back());
@@ -2496,7 +2556,7 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
             std::shared_ptr<const CBlock> nullBlockPtr;
             if (!ActivateBestChainStep(state, chainparams, pindexMostWork, pblock && pblock->GetHash() == pindexMostWork->GetBlockHash() ? pblock : nullBlockPtr, fInvalidFound, connectTrace))
                 return false;
-
+            
             if (fInvalidFound) {
                 // Wipe cache, we may need another branch now.
                 pindexMostWork = nullptr;
@@ -2665,6 +2725,12 @@ static CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
         pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
         pindexNew->BuildSkip();
     }
+
+    // Get current timestamp. See UpdateTime().
+    pindexNew->nArrivalTime = GetAdjustedTime();
+    if (pindexNew->pprev != nullptr)
+        pindexNew->nArrivalTime = std::max(pindexNew->GetArrivalTime(), pindexNew->pprev->GetMedianTimePast()+1);
+
     pindexNew->nTimeMax = (pindexNew->pprev ? std::max(pindexNew->pprev->nTimeMax, pindexNew->nTime) : pindexNew->nTime);
     pindexNew->nChainWork = (pindexNew->pprev ? pindexNew->pprev->nChainWork : 0) + GetBlockProof(*pindexNew);
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
@@ -2815,17 +2881,32 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
+//b04902091
+if(fCheckPOW){
+    if(!((block.nTimeNonce>=block.nTimeNonce2)&&(block.nTimeNonce2>=block.nTime))){
+	LogPrintf("StartTime %d MaxHashTime %d EndTime %d isn't ordered\n",block.nTime,block.nTimeNonce2,block.nTimeNonce);
+        return false;
+    }
+    if(block.GetHash2() != block.maxhash){
+	LogPrintf("illegal MaxHash %s, Real MaxHash %s\n",block.maxhash.GetHex(),block.GetHash2().GetHex());
+	return false;
+    }
+    if(!CheckEPow(block.GetHash2(), block.GetHash(), block.nTimeNonce-block.nTime)){
+	if(block.GetHash() != consensusParams.hashGenesisBlock){
+	    return false;
+	}
+    }
     // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+    if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
-
+}
+//b04902091
     return true;
 }
 
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
-
     if (block.fChecked)
         return true;
 
@@ -2861,9 +2942,9 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
-    for (unsigned int i = 1; i < block.vtx.size(); i++)
+    /*for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
-            return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
+            return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");*/
 
     // Check transactions
     for (const auto& tx : block.vtx)
@@ -3215,8 +3296,8 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
 
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
+    CBlockIndex *pindex = nullptr;
     {
-        CBlockIndex *pindex = nullptr;
         if (fNewBlock) *fNewBlock = false;
         CValidationState state;
         // Ensure that CheckBlock() passes before calling AcceptBlock, as
@@ -3235,12 +3316,38 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
             return error("%s: AcceptBlock FAILED", __func__);
         }
     }
-
+    
     NotifyHeaderTip();
+    
+    if (IsInitialBlockDownload() == true) {
+        CValidationState state;
+        if (!ActivateBestChain(state, chainparams, pblock))
+            return error("%s: ActivateBestChain failed", __func__);
 
-    CValidationState state; // Only used to report errors, not invalidity - ignore it
-    if (!ActivateBestChain(state, chainparams, pblock))
-        return error("%s: ActivateBestChain failed", __func__);
+        if (pindex->GetBlockHash() == chainActive.Tip()->GetBlockHash())
+            UpdateRound(pindex);
+    } else if (IsRoundExpired() == false) {
+        if (IsBroadcastDelayedBlock(pindex) == true || IsCurrentRoundBlock(pindex) == false) {
+            CValidationState state;
+            InvalidateBlock(state, Params(), pindex);
+        }
+
+        CValidationState state;
+        if (!ActivateBestChain(state, chainparams, pblock))
+            return error("%s: ActivateBestChain failed", __func__);
+    } else { // IsRoundExpired() == true
+        if (IsBroadcastDelayedBlock(pindex) == true || IsNextRoundBlock(pindex) == false) {
+            CValidationState state;
+            InvalidateBlock(state, Params(), pindex);
+        }
+
+        CValidationState state;
+        if (!ActivateBestChain(state, chainparams, pblock))
+            return error("%s: ActivateBestChain failed", __func__);
+         
+        if (pindex->GetBlockHash() == chainActive.Tip()->GetBlockHash())
+            UpdateRound(pindex);
+    }
 
     return true;
 }
@@ -3487,9 +3594,8 @@ CBlockIndex * InsertBlockIndex(uint256 hash)
 
 bool static LoadBlockIndexDB(const CChainParams& chainparams)
 {
-    if (!pblocktree->LoadBlockIndexGuts(chainparams.GetConsensus(), InsertBlockIndex))
+    if (!pblocktree->LoadBlockIndexGuts(chainparams.GetConsensus(), InsertBlockIndex))///
         return false;
-
     boost::this_thread::interruption_point();
 
     // Calculate nChainWork
