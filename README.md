@@ -15,3 +15,8 @@ See [doc/dev-docker.md](doc/dev-docker.md).
 ## OurContract
 
 See [doc/ourcontract.md](doc/ourcontract.md).
+
+
+ChangingLog
+-----------
+src/wallet/rpcwallet.cpp --> ReadFile
