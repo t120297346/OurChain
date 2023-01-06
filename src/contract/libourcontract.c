@@ -1,37 +1,80 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
-#include <linux/limits.h>
 #include <dlfcn.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <linux/limits.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "ourcontract.h"
 
 /* entry of call stack */
 typedef struct _frame {
-    const char *name;
-    FILE *out_fp;
+    const char* name;
+    FILE* out_fp;
     int state_fd;
     int depth;
-    struct _frame *parent;
+    struct _frame* parent;
 } frame;
 
 /* call stack */
-static frame *curr_frame = NULL;
+static frame* curr_frame = NULL;
 FILE* in;
 FILE* out;
 
-static inline bool processmantissadigit(char ch, int64_t *mantissa, int *mantissa_tzeros)
+int socket_send()
 {
-    if(ch == '0')
-        *mantissa_tzeros=*mantissa_tzeros + 1;
+    // socket的建立
+    int sockfd = 0;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd == -1) {
+        err_printf("Fail to create a socket.");
+        return -1;
+    }
+
+    // socket的連線
+
+    struct sockaddr_in info;
+    bzero(&info, sizeof(info));
+    info.sin_family = PF_INET;
+
+    // localhost test
+    info.sin_addr.s_addr = inet_addr("127.0.0.1");
+    info.sin_port = htons(8700);
+
+
+    int err = connect(sockfd, (struct sockaddr*)&info, sizeof(info));
+    if (err == -1) {
+        err_printf("Connection error");
+        return -1;
+    }
+
+
+    // Send a message to server
+    char message[] = {"Hi there"};
+    char receiveMessage[100] = {};
+    send(sockfd, message, sizeof(message), 0);
+    recv(sockfd, receiveMessage, sizeof(receiveMessage), 0);
+
+    err_printf("%s", receiveMessage);
+    err_printf("close Socket\n");
+    close(sockfd);
+    return 0;
+}
+
+static inline bool processmantissadigit(char ch, int64_t* mantissa, int* mantissa_tzeros)
+{
+    if (ch == '0')
+        *mantissa_tzeros = *mantissa_tzeros + 1;
     else {
-        for (int i=0; i<=(*mantissa_tzeros); ++i) {
+        for (int i = 0; i <= (*mantissa_tzeros); ++i) {
             if ((*mantissa) > (UPPER_BOUND / 10LL))
                 return false; /* overflow */
             *mantissa = *mantissa * 10;
@@ -42,7 +85,7 @@ static inline bool processmantissadigit(char ch, int64_t *mantissa, int *mantiss
     return true;
 }
 
-bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
+bool parsefixedpoint(const char* val, int decimals, int64_t* amount_out)
 {
     int64_t mantissa = 0;
     int64_t exponent = 0;
@@ -57,8 +100,7 @@ bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
         mantissa_sign = true;
         ++ptr;
     }
-    if (ptr < end)
-    {
+    if (ptr < end) {
         if (val[ptr] == '0') {
             /* pass single 0 */
             ++ptr;
@@ -68,23 +110,23 @@ bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
                     return false; /* overflow */
                 ++ptr;
             }
-        } else return false; /* missing expected digit */
-    } else return false; /* empty string or loose '-' */
-    if (ptr < end && val[ptr] == '.')
-    {
+        } else
+            return false; /* missing expected digit */
+    } else
+        return false; /* empty string or loose '-' */
+    if (ptr < end && val[ptr] == '.') {
         ++ptr;
-        if (ptr < end && val[ptr] >= '0' && val[ptr] <= '9')
-        {
+        if (ptr < end && val[ptr] >= '0' && val[ptr] <= '9') {
             while (ptr < end && val[ptr] >= '0' && val[ptr] <= '9') {
                 if (!processmantissadigit(val[ptr], &mantissa, &mantissa_tzeros))
                     return false; /* overflow */
                 ++ptr;
                 ++point_ofs;
             }
-        } else return false; /* missing expected digit */
+        } else
+            return false; /* missing expected digit */
     }
-    if (ptr < end && (val[ptr] == 'e' || val[ptr] == 'E'))
-    {
+    if (ptr < end && (val[ptr] == 'e' || val[ptr] == 'E')) {
         ++ptr;
         if (ptr < end && val[ptr] == '+')
             ++ptr;
@@ -99,7 +141,8 @@ bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
                 exponent = exponent * 10 + val[ptr] - '0';
                 ++ptr;
             }
-        } else return false; /* missing expected digit */
+        } else
+            return false; /* missing expected digit */
     }
     if (ptr != end)
         return false; /* trailing garbage */
@@ -120,7 +163,7 @@ bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
     if (exponent >= 18)
         return false; /* cannot represent values larger than or equal to 10^(18-decimals) */
 
-    for (int i=0; i < exponent; ++i) {
+    for (int i = 0; i < exponent; ++i) {
         if (mantissa > (UPPER_BOUND / 10LL) || mantissa < -(UPPER_BOUND / 10LL))
             return false; /* overflow */
         mantissa *= 10;
@@ -134,9 +177,9 @@ bool parsefixedpoint(const char *val, int decimals, int64_t *amount_out)
     return true;
 }
 
-static void push(const char *name)
+static void push(const char* name)
 {
-    frame *new = malloc(sizeof(frame));
+    frame* new = malloc(sizeof(frame));
 
     if (new == NULL) {
         err_printf("push: malloc failed\n");
@@ -146,8 +189,10 @@ static void push(const char *name)
     new->name = name;
     new->out_fp = NULL;
     new->state_fd = -1;
-    if (curr_frame == NULL) new->depth = 1;
-    else new->depth = curr_frame->depth + 1;
+    if (curr_frame == NULL)
+        new->depth = 1;
+    else
+        new->depth = curr_frame->depth + 1;
 
     new->parent = curr_frame;
     curr_frame = new;
@@ -160,7 +205,7 @@ static void pop()
         exit(EXIT_FAILURE);
     }
 
-    frame *bye = curr_frame;
+    frame* bye = curr_frame;
     if (bye->out_fp != NULL) fclose(bye->out_fp);
     if (bye->state_fd != -1) close(bye->state_fd);
     curr_frame = curr_frame->parent;
@@ -169,14 +214,14 @@ static void pop()
 
 /* argv of ourcontract-rt */
 static int runtime_argc;
-static char **runtime_argv = NULL;
+static char** runtime_argv = NULL;
 
-static inline const char *get_contracts_dir()
+static inline const char* get_contracts_dir()
 {
     return runtime_argv[1];
 }
 
-int start_runtime(int argc, char **argv)
+int start_runtime(int argc, char** argv)
 {
     if (runtime_argv != NULL) {
         err_printf("start_runtime: cannot be called more than once\n");
@@ -197,7 +242,7 @@ int start_runtime(int argc, char **argv)
     return call_contract(argv[2], argc - 2, argv + 2);
 }
 
-int call_contract(const char *contract, int argc, char **argv)
+int call_contract(const char* contract, int argc, char** argv)
 {
     char filename[PATH_MAX];
     if (snprintf(filename, PATH_MAX, "%s/%s/code.so", get_contracts_dir(), contract) >= PATH_MAX) {
@@ -205,13 +250,13 @@ int call_contract(const char *contract, int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    void *handle = dlopen(filename, RTLD_LAZY);
+    void* handle = dlopen(filename, RTLD_LAZY);
     if (handle == NULL) {
         err_printf("call_contract: dlopen failed\n");
         return EXIT_FAILURE;
     }
 
-    int (*contract_main)(int, char **) = dlsym(handle, "contract_main");
+    int (*contract_main)(int, char**) = dlsym(handle, "contract_main");
     if (contract_main == NULL) {
         err_printf("call_contract: %s\n", dlerror());
         return EXIT_FAILURE;
@@ -225,7 +270,7 @@ int call_contract(const char *contract, int argc, char **argv)
     return ret;
 }
 
-int err_printf(const char *format, ...)
+int err_printf(const char* format, ...)
 {
     va_list args;
     int ret;
@@ -237,7 +282,7 @@ int err_printf(const char *format, ...)
     return ret;
 }
 
-int str_printf(char *str, unsigned size, const char *format, ...)
+int str_printf(char* str, unsigned size, const char* format, ...)
 {
     va_list args;
     int ret;
@@ -249,16 +294,16 @@ int str_printf(char *str, unsigned size, const char *format, ...)
     return ret;
 }
 
-int str_cmp(const char *s1, const char *s2, int n)
+int str_cmp(const char* s1, const char* s2, int n)
 {
     return strncmp(s1, s2, n);
 }
 
-static int out_open(const char *mode)
+static int out_open(const char* mode)
 {
     char filename[PATH_MAX];
     if (snprintf(filename, PATH_MAX, "%s/%s/out",
-                 get_contracts_dir(), curr_frame->name) >= PATH_MAX) {
+            get_contracts_dir(), curr_frame->name) >= PATH_MAX) {
         err_printf("out_open: path too long\n");
         return -1;
     }
@@ -281,7 +326,7 @@ static int out_close()
     return 0;
 }
 
-int out_printf(const char *format, ...)
+int out_printf(const char* format, ...)
 {
     if (curr_frame->out_fp == NULL) {
         if (out_open("a") == -1) return -1;
@@ -311,7 +356,7 @@ static int state_open(int flags)
 {
     char filename[PATH_MAX];
     if (snprintf(filename, PATH_MAX, "%s/%s/state",
-                 get_contracts_dir(), curr_frame->name) >= PATH_MAX) {
+            get_contracts_dir(), curr_frame->name) >= PATH_MAX) {
         err_printf("state_open: path too long\n");
         return -1;
     }
@@ -334,19 +379,20 @@ static int state_close()
     return 0;
 }
 
-int state_read(void *buf, int count)
+int state_read()
 {
-    if (curr_frame->state_fd == -1) {
-        if (state_open(O_RDONLY) == -1) return -1;
-    } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
-        if (state_close() == -1) return -1;
-        if (state_open(O_RDONLY) == -1) return -1;
-    }
+    // if (curr_frame->state_fd == -1) {
+    //     if (state_open(O_RDONLY) == -1) return -1;
+    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
+    //     if (state_close() == -1) return -1;
+    //     if (state_open(O_RDONLY) == -1) return -1;
+    // }
 
-    return read(curr_frame->state_fd, buf, count);
+    // return read(curr_frame->state_fd, buf, count);
+    return socket_send();
 }
 
-int state_write(const void *buf, int count)
+int state_write(const void* buf, int count)
 {
     if (curr_frame->state_fd == -1) {
         if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
@@ -382,7 +428,7 @@ int send_money_to_contract(const char* addr, CAmount amount)
     return 0;
 }
 
-CAmount amount_from_string(const char *val)
+CAmount amount_from_string(const char* val)
 {
     CAmount amount;
     if (!parsefixedpoint(val, 8, &amount))

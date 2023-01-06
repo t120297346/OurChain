@@ -34,6 +34,14 @@ bitcoind --regtest --daemon
 bitcoin-cli stop
 # 教學
 bitcoin-cli help
+# 獲取餘額
+bitcoin-cli getbalance
+# 挖礦給自己
+bitcoin-cli generate 1
+# 發布合約
+bitcoin-cli deploycontract ~/Desktop/ourchain/sampleContract.c
+# 執行合約 (can check info in ~/.bitcoin/regtest/contracts)
+bitcoin-cli callcontract "contract txid when deploy" "arg1" "arg2" ...
 ```
 
 設置內容
