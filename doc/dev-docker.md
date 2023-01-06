@@ -23,6 +23,30 @@ docker image ls
 docker run -it [IMAGE ID]
 ```
 
+設置環境變數與啟動測試
+
+```bash
+# 貼上設置內容
+vim /root/.bitcoin/bitcoin.conf
+# 啟動
+bitcoind --regtest --daemon
+# 停止
+bitcoin-cli stop
+# 教學
+bitcoin-cli help
+```
+
+設置內容
+
+```
+server=1
+rpcuser=test
+rpcpassword=test
+rpcport=8332
+rpcallowip=0.0.0.0/0
+regtest=1
+```
+
 啟動後可以在 Desktop 找到專案
 
 ## 重複使用 container
