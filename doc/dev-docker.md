@@ -68,8 +68,16 @@ docker start [CONTAINER ID]
 
 ## 檔案編輯與執行
 
-請點開 dev-container 插件, 即可直接編輯 container 內部檔案
-可以利用 docker desktop 開啟 container 內部 CMD 執行專案
+### 編輯
+- 打開 VS Code
+- 最左邊一排 icon 內，點 Remote Explorer
+- 按下正確的 Container 後，出現的圖標中按下 Attach to Container
+- 接著會自動開一個新的 VS Code，左下角綠底的部分會顯示該 Container 的 Image ID
+- 最左邊一排 icon 內，點 Explorer
+- 路徑選擇 ourchain 所在的位置打開即可
+### 執行
+- VS Code 最上方工具列選擇 Terminal > New Terminal 或是用快捷鍵 Ctrl+Shift+`
+- 也可以利用 docker desktop 開啟 container 內部 Terminal
 
 ## 刪除
 
