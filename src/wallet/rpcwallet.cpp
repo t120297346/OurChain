@@ -5,6 +5,7 @@
 
 #include <amount.h>
 #include <chain.h>
+#include <coins.h>
 #include <consensus/validation.h>
 #include <contract/contract.h>
 #include <core_io.h>
@@ -26,6 +27,7 @@
 #include <timedata.h>
 #include <util.h>
 #include <utilmoneystr.h>
+#include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
 #include <wallet/rpcwallet.h>
@@ -54,7 +56,7 @@ bool GetWalletNameFromJSONRPCRequest(const JSONRPCRequest& request, std::string&
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request)
 {
     std::string wallet_name;
-    printf("%s\n", wallet_name);
+    printf("%s\n", wallet_name.c_str());
     if (GetWalletNameFromJSONRPCRequest(request, wallet_name)) {
         std::shared_ptr<CWallet> pwallet = GetWallet(wallet_name);
         if (!pwallet) throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
@@ -4949,6 +4951,41 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
     return buf;
 }
 
+UniValue listcontractstate(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "listcontractstate \"contract_id\"\n"
+            "\nShow the state of a smart contract.\n"
+            "\nArguments:\n"
+            "1. \"contract_id\"        (string) The contract_id of the smart contract\n"
+            "\nResult\n"
+            "state           (string) The state of the contract, which is just the reuslt of serialized contract\n"
+            "contract address           (string) The contract address to be query\n"
+            "\nExamples:\n" +
+            HelpExampleCli("listcontractstate", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\""));
+    }
+    uint256 contract_id = uint256S(request.params[0].get_str());
+    ContState contractState;
+    CCoinsViewCache view(pcoinsTip.get());
+
+    if (!view.GetContState(contract_id, contractState)) {
+        throw std::runtime_error(
+            "contract_id " + request.params[0].get_str() + " not found\n");
+    }        
+    
+    std::string state(contractState.state.size(), '0');
+
+    for (int i = 0; i < contractState.state.size(); ++i) {
+        state[i] = contractState.state[i];
+    }
+
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("state", state);
+    obj.pushKV("contract address", contract_id.GetHex());
+    return obj;
+}
+
 
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
@@ -5036,7 +5073,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "deploycontract",                   &deploycontract,                {"filename","initializer"} },
     { "wallet",             "callcontract",                     &callcontract,                  {"txid","function"} },
     { "wallet",             "dumpcontractmessage",              &dumpcontractmessage,           {"txid"} },
-
+    { "wallet",             "listcontractstate",                &listcontractstate,             {"contract_id"} },
 
     { "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
 };
