@@ -14,6 +14,18 @@
 
 #include <chainparamsseeds.h>
 
+#define DEBUG
+#if defined(DEBUG)
+    #define MAINNET_DEBUG
+    #define TESTNET_DEBUG
+    #define REGTEST_DEBUG
+#endif
+
+#if defined(MINE_MAIN_GENESIS) || defined(MINE_TESTNET_GENESIS) || defined(MINE_REGTEST_GENESIS)
+  #include <stdio.h>
+  #include <time.h>
+  #include "pow.h"
+#endif
 
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -124,10 +136,10 @@ public:
         consensus.hashGenesisBlock = genesis.GetHash();
 
 #ifdef MAINNET_DEBUG
-        printf("%s\n%s\n", consensus.hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
+        printf("mainnet: %s\n%s\n", consensus.hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
 #endif
-        assert(consensus.hashGenesisBlock == uint256S("0x18076d8cadbb296067eb4eab8a6b8aea26062717f276791a5da336cfbbc6ed32"));
-        assert(genesis.hashMerkleRoot == uint256S("0xd9f2a49b88a6a667ec31635b1148378d656eab79ba1bd4736cfe51516464980f"));
+        assert(consensus.hashGenesisBlock == uint256S("0xa42520e5ec42fc0ffa986205dafe16c8eb056355ec5acf89eddd46dd413a4ea0"));
+        assert(genesis.hashMerkleRoot == uint256S("0x70357d2c56e4da23c5bcb4bfde33423abe7d8b76d6f218170c6cb94d3efd1d0a"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
@@ -237,10 +249,10 @@ public:
         consensus.hashGenesisBlock = genesis.GetHash();
 
 #ifdef TESTNET_DEBUG
-        printf("%s\n%s\n", consensus.hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
+        printf("testnet: %s\n%s\n", consensus.hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
 #endif        
-        assert(consensus.hashGenesisBlock == uint256S("0x7a9696de3be61e982ff871e1d2b642ff8edad6e35c53a6939d3682d620a02f21"));
-        assert(genesis.hashMerkleRoot == uint256S("0xd9f2a49b88a6a667ec31635b1148378d656eab79ba1bd4736cfe51516464980f"));
+        assert(consensus.hashGenesisBlock == uint256S("0xf5c01b1c2d43bdaa1f1cb88b714b263de813103dca4a920115e6b3f2fb4a96b4"));
+        assert(genesis.hashMerkleRoot == uint256S("0x70357d2c56e4da23c5bcb4bfde33423abe7d8b76d6f218170c6cb94d3efd1d0a"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -326,10 +338,34 @@ public:
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1536399020, 0, 0x207fffff, 1, 50 * COIN);
+#ifdef MINE_REGTEST_GENESIS
+        uint32_t t = time(NULL);
+        fprintf(stderr, "Mining regtest genesis block...\n\ntime = %u\n", t);
+        for (; ; ++t) {
+            for (uint32_t n = 0; ; ++n) {
+                if ((n & 0xfffff) == 0) fprintf(stderr, "\rnonce = %u", n);
+                genesis = CreateGenesisBlock(t, n, 0x207fffff, 1, 50 * COIN);
+                if (CheckProofOfWork(genesis.GetHash(), genesis.nBits, consensus)) {
+                    fprintf(stderr,
+                            "\rnonce = %u\nhash = %s\nhashMerkleRoot = %s\n\n", n,
+                            genesis.GetHash().ToString().c_str(),
+                            genesis.hashMerkleRoot.ToString().c_str());
+                    assert(false);
+                }
+                if (n == 4294967295) break;
+            }
+        }
+#endif
+
+        genesis = CreateGenesisBlock(1675843369, 3, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x4756fd8ae5db78e1861081b095861b2c5a218c633ba7dc77fd2f756c55fdb9f1"));
-        assert(genesis.hashMerkleRoot == uint256S("0xd9f2a49b88a6a667ec31635b1148378d656eab79ba1bd4736cfe51516464980f"));
+
+#ifdef REGTEST_DEBUG
+        printf("regtest: %s\n%s\n", consensus.hashGenesisBlock.ToString().c_str(), genesis.hashMerkleRoot.ToString().c_str());
+#endif
+    
+        assert(consensus.hashGenesisBlock == uint256S("0x026ff6cb97c7e9395eb88eadaf4f5da07136a941ed1e30d7176da5c2b20eb777"));
+        assert(genesis.hashMerkleRoot == uint256S("0x70357d2c56e4da23c5bcb4bfde33423abe7d8b76d6f218170c6cb94d3efd1d0a"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.

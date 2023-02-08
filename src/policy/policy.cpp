@@ -13,6 +13,7 @@
 #include <tinyformat.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <warnings.h>
 
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)

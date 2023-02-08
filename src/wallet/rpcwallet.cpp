@@ -35,6 +35,8 @@
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
 
+#include <warnings.h>
+
 #include <stdint.h>
 
 #include <univalue.h>
@@ -4773,7 +4775,8 @@ static void SendContractTx(CWallet * const pwallet, const Contract *contract, co
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = {scriptPubKey, 0, false};
+    //CRecipient recipient = {scriptPubKey, 0, false};
+    CRecipient recipient = {scriptPubKey, 546, false}; //Dust is not allowed ib bitcoin 0.17
     vecSend.push_back(recipient);
     if (!pwallet->CreateTransaction(vecSend, txNew, reservekey, nFeeRequired, nChangePosRet, strError, coin_control, true, contract, true)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -4828,6 +4831,7 @@ UniValue deploycontract(const JSONRPCRequest& request)
     if (ReadFile(request.params[0].get_str(), contract.code) == false) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "File does not exist.");
     }
+
     contract.action = contract_action::ACTION_NEW;
     if (request.params.size() > 1) {
         for (unsigned i = 1; i < request.params.size(); i++)

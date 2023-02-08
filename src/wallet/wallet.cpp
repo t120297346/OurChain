@@ -29,6 +29,7 @@
 #include <utilmoneystr.h>
 #include <wallet/fees.h>
 #include <wallet/walletutil.h>
+#include <warnings.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -2724,7 +2725,9 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransac
     assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
 
     // If the transaction interacts with smart contracts, fill the related field.
-    if (contract != NULL) txNew.contract = *contract;
+    if (contract != NULL){
+        txNew.contract = *contract;
+    }
 
     FeeCalculation feeCalc;
     CAmount nFeeNeeded;
@@ -3025,7 +3028,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransac
         // Embed the constructed transaction data in wtxNew.
         if( txNew.contract.action == 1 )
             txNew.contract.address = txNew.GetHash();
-
+        
         // Return the constructed transaction data.
         tx = MakeTransactionRef(std::move(txNew));
 

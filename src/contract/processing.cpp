@@ -1,11 +1,12 @@
+#include "amount.h"
+#include "base58.h"
 #include "contract/processing.h"
-#include "util.h"
+#include "key_io.h"
 #include "primitives/transaction.h"
 #include "script/standard.h"
-#include "base58.h"
 #include "uint256.h"
-#include "amount.h"
-#include "key_io.h"
+#include "util.h"
+#include "warnings.h"
 
 #include <string>
 #include <fstream>
@@ -163,6 +164,7 @@ static int call_rt(const uint256& contract, const std::vector<std::string> &args
 bool ProcessContract(const Contract &contract, std::vector<CTxOut> &vTxOut, std::vector<uchar> &state, CAmount balance,
                      std::vector<Contract> &nextContract)
 {
+    LogPrintf("action: %d\n", contract.action);
     if (contract.action == contract_action::ACTION_NEW) {
         fs::path new_dir = GetContractsDir() / contract.address.GetHex();
         fs::create_directories(new_dir);

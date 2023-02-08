@@ -201,8 +201,6 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     s >> tx.nVersion;
     unsigned char flags = 0;
 
-    s >> tx.contract;
-
     tx.vin.clear();
     tx.vout.clear();
     /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
@@ -218,6 +216,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
         /* We read a non-empty vin. Assume a normal vout follows. */
         s >> tx.vout;
     }
+    s >> tx.contract;
     if ((flags & 1) && fAllowWitness) {
         /* The witness flag is present, and we support witnesses. */
         flags ^= 1;
@@ -251,9 +250,9 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         s << vinDummy;
         s << flags;
     }
-    s << tx.contract;
     s << tx.vin;
     s << tx.vout;
+    s << tx.contract;
     if (flags & 1) {
         for (size_t i = 0; i < tx.vin.size(); i++) {
             s << tx.vin[i].scriptWitness.stack;

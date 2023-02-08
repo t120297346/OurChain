@@ -391,12 +391,14 @@ libbitcoin_common_a_SOURCES = \
   compressor.cpp \
   core_read.cpp \
   core_write.cpp \
+  chain.cpp \
   key.cpp \
   key_io.cpp \
   keystore.cpp \
   netaddress.cpp \
   netbase.cpp \
   policy/feerate.cpp \
+  pow.cpp \
   protocol.cpp \
   scheduler.cpp \
   script/descriptor.cpp \

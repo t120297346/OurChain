@@ -14,7 +14,7 @@
 #include <consensus/merkle.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
-#include "contract/processing.h"
+#include <contract/processing.h>
 #include <cuckoocache.h>
 #include <hash.h>
 #include <index/txindex.h>
@@ -24,6 +24,7 @@
 #include <pow.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
+#include <queue>
 #include <random.h>
 #include <reverse_iterator.h>
 #include <script/script.h>
@@ -1330,7 +1331,7 @@ CTransactionRef ProcessContractTx(const Contract &cont, CCoinsViewCache& inputs,
         mtx.vin.push_back(CTxIn(outpoint));
         balance += inputs.AccessCoin(outpoint).out.nValue;
     }
-
+    LogPrintf("Here\n");
     if (!ProcessContract(cont, mtx.vout, cs.state, balance, nextContract)) return CTransactionRef();
     // update cont state
     cs.coins.clear();
@@ -2077,6 +2078,26 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             blockundo.vtxundo.push_back(CTxUndo());
         }
         UpdateCoins(tx, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
+
+        std::queue<Contract> contractQueue;
+        if (tx.contract.action != ACTION_NONE){
+            contractQueue.push(tx.contract);
+        }
+        while (!contractQueue.empty()) {
+            Contract cur = std::move(contractQueue.front());
+            contractQueue.pop();
+
+            std::vector<Contract> contractCall;
+            CTransactionRef ptx = ProcessContractTx(cur, view, contractCall);
+            if (ptx) {
+                block.vvtx.push_back(ptx);
+                blockundo.vtxundo.push_back(CTxUndo());
+                UpdateCoins(*ptx, view, blockundo.vtxundo.back(), pindex->nHeight);
+                for (Contract &nextContract: contractCall) {
+                    contractQueue.push(std::move(nextContract));
+                }
+            }
+        }
     }
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
