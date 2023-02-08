@@ -51,7 +51,7 @@ int out_printf(const char* format, ...);
 int out_clear(void);
 
 /* read the state file of the calling contract */
-int state_read();
+int state_read(void* buf, int count);
 
 /* write the state file of the calling contract */
 int state_write(const void* buf, int count);

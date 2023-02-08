@@ -6,8 +6,6 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <linux/limits.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -27,47 +25,6 @@ typedef struct _frame {
 static frame* curr_frame = NULL;
 FILE* in;
 FILE* out;
-
-int socket_send()
-{
-    // socket的建立
-    int sockfd = 0;
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (sockfd == -1) {
-        err_printf("Fail to create a socket.");
-        return -1;
-    }
-
-    // socket的連線
-
-    struct sockaddr_in info;
-    bzero(&info, sizeof(info));
-    info.sin_family = PF_INET;
-
-    // localhost test
-    info.sin_addr.s_addr = inet_addr("127.0.0.1");
-    info.sin_port = htons(8700);
-
-
-    int err = connect(sockfd, (struct sockaddr*)&info, sizeof(info));
-    if (err == -1) {
-        err_printf("Connection error");
-        return -1;
-    }
-
-
-    // Send a message to server
-    char message[] = {"Hi there"};
-    char receiveMessage[100] = {};
-    send(sockfd, message, sizeof(message), 0);
-    recv(sockfd, receiveMessage, sizeof(receiveMessage), 0);
-
-    err_printf("%s", receiveMessage);
-    err_printf("close Socket\n");
-    close(sockfd);
-    return 0;
-}
 
 static inline bool processmantissadigit(char ch, int64_t* mantissa, int* mantissa_tzeros)
 {
@@ -379,17 +336,16 @@ static int state_close()
     return 0;
 }
 
-int state_read()
+int state_read(void* buf, int count)
 {
-    // if (curr_frame->state_fd == -1) {
-    //     if (state_open(O_RDONLY) == -1) return -1;
-    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
-    //     if (state_close() == -1) return -1;
-    //     if (state_open(O_RDONLY) == -1) return -1;
-    // }
+    if (curr_frame->state_fd == -1) {
+        if (state_open(O_RDONLY) == -1) return -1;
+    } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
+        if (state_close() == -1) return -1;
+        if (state_open(O_RDONLY) == -1) return -1;
+    }
 
-    // return read(curr_frame->state_fd, buf, count);
-    return socket_send();
+    return read(curr_frame->state_fd, buf, count);
 }
 
 int state_write(const void* buf, int count)
