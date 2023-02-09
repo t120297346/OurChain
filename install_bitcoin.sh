@@ -10,9 +10,6 @@ echo "choose mode 'reconfig' or not"
 read mode
 
 if [[ $mode == "reconfig" ]]; then
-    cd src/
-    echo m9031314 | sudo -S rm -rf *.a *.o *.la *.lo .libs/ .deps/ */*.a */*.o */*.la */*.lo */.deps */.libs */.dirstamp
-    cd ..
     ./autogen.sh
     ./configure --disable-gui --disable-tests
 fi
