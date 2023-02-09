@@ -14,7 +14,6 @@
 
 #include <chainparamsseeds.h>
 
-#define DEBUG
 #if defined(DEBUG)
     #define MAINNET_DEBUG
     #define TESTNET_DEBUG
@@ -132,6 +131,25 @@ public:
         nDefaultPort = 8333;
         nPruneAfterHeight = 100000;
 
+#ifdef MINE_MAINNET_GENESIS
+        uint32_t t = time(NULL);
+        fprintf(stderr, "Mining mainnet genesis block...\n\ntime = %u\n", t);
+        for (; ; ++t) {
+            for (uint32_t n = 0; ; ++n) {
+                if ((n & 0xfffff) == 0) fprintf(stderr, "\rnonce = %u", n);
+                genesis = CreateGenesisBlock(t, n, 0x1d00ffff, 1, 50 * COIN);
+                if (CheckProofOfWork(genesis.GetHash(), genesis.nBits, consensus)) {
+                    fprintf(stderr,
+                            "\rnonce = %u\nhash = %s\nhashMerkleRoot = %s\n\n", n,
+                            genesis.GetHash().ToString().c_str(),
+                            genesis.hashMerkleRoot.ToString().c_str());
+                    assert(false);
+                }
+                if (n == 4294967295) break;
+            }
+        }
+#endif
+
         genesis = CreateGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
@@ -244,6 +262,25 @@ public:
         pchMessageStart[3] = 0x07;
         nDefaultPort = 18333;
         nPruneAfterHeight = 1000;
+
+#ifdef MINE_TESTNET_GENESIS
+        uint32_t t = time(NULL);
+        fprintf(stderr, "Mining testnet genesis block...\n\ntime = %u\n", t);
+        for (; ; ++t) {
+            for (uint32_t n = 0; ; ++n) {
+                if ((n & 0xfffff) == 0) fprintf(stderr, "\rnonce = %u", n);
+                genesis = CreateGenesisBlock(t, n, 0x1d00ffff, 1, 50 * COIN);
+                if (CheckProofOfWork(genesis.GetHash(), genesis.nBits, consensus)) {
+                    fprintf(stderr,
+                            "\rnonce = %u\nhash = %s\nhashMerkleRoot = %s\n\n", n,
+                            genesis.GetHash().ToString().c_str(),
+                            genesis.hashMerkleRoot.ToString().c_str());
+                    assert(false);
+                }
+                if (n == 4294967295) break;
+            }
+        }
+#endif
 
         genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
