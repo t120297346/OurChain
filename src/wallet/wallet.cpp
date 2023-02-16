@@ -2822,7 +2822,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransac
                     // Include the fee cost for outputs. Note this is only used for BnB right now
                     coin_selection_params.tx_noinputs_size += ::GetSerializeSize(txout, SER_NETWORK, PROTOCOL_VERSION);
 
-                    if (IsDust(txout, ::dustRelayFee))
+                    if (IsDust(txout, ::dustRelayFee) && !allowDust)
                     {
                         if (recipient.fSubtractFeeFromAmount && nFeeRet > 0)
                         {
