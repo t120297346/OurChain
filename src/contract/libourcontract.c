@@ -338,26 +338,31 @@ static int state_close()
 
 int state_read(void* buf, int count)
 {
-    if (curr_frame->state_fd == -1) {
-        if (state_open(O_RDONLY) == -1) return -1;
-    } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
-        if (state_close() == -1) return -1;
-        if (state_open(O_RDONLY) == -1) return -1;
-    }
+    // if (curr_frame->state_fd == -1) {
+    //     if (state_open(O_RDONLY) == -1) return -1;
+    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
+    //     if (state_close() == -1) return -1;
+    //     if (state_open(O_RDONLY) == -1) return -1;
+    // }
 
-    return read(curr_frame->state_fd, buf, count);
+    // return read(curr_frame->state_fd, buf, count);
+    int flag = BYTE_READ_STATE;
+    fwrite((void*)&flag, sizeof(int), 1, out);
+    return fread(buf, 1, count, in);
 }
 
 int state_write(const void* buf, int count)
 {
-    if (curr_frame->state_fd == -1) {
-        if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
-    } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_WRONLY) {
-        if (state_close() == -1) return -1;
-        if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
-    }
+    // if (curr_frame->state_fd == -1) {
+    //     if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
+    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_WRONLY) {
+    //     if (state_close() == -1) return -1;
+    //     if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
+    // }
 
-    return write(curr_frame->state_fd, buf, count);
+    // return write(curr_frame->state_fd, buf, count);
+    fwrite((void*)&count, sizeof(int), 1, out);
+    return fwrite(buf, 1, count, out);
 }
 
 int send_money(const char* addr, CAmount amount)

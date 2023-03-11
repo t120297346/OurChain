@@ -32,10 +32,41 @@ const static fs::path &GetContractsDir()
     return contracts_dir;
 }
 
+ContractDBWrapper::ContractDBWrapper(){
+    options.create_if_missing = true;
+    fs::path path = GetDataDir() / "contracts" / "index";
+    TryCreateDirectories(path);
+    leveldb::Status status = leveldb::DB::Open(options, path.string(), &db);
+    if(status.ok()){
+        LogPrintf("Opening ContractLevelDB in %s\n", path.string());
+    }
+};
+
+ContractDBWrapper::~ContractDBWrapper()
+{
+    delete db;
+    db = nullptr;
+};
+
+void ContractDBWrapper::setState()
+{
+    std::string key = "gonev";
+	std::string value = "a handsome man";
+	db->Put(leveldb::WriteOptions(), key, value);
+
+};
+
+void ContractDBWrapper::getState()
+{
+    std::string key_ = "gonev";
+	std::string val_ = "";
+	db->Get(leveldb::ReadOptions(), key_, &val_);
+    // LogPrintf("ContractLevelDB value is %s\n", val_);
+};
+
 static int call_mkdll(const uint256& contract)
 {
     int pid, status;
-
     pid = fork();
     if(pid == 0) {
         int fd = open((GetContractsDir().string() + "/err").c_str(),
@@ -43,7 +74,6 @@ static int call_mkdll(const uint256& contract)
                       0664);
         dup2(fd, STDERR_FILENO);
         close(fd);
-
         execlp("ourcontract-mkdll",
                "ourcontract-mkdll",
                GetContractsDir().string().c_str(),
@@ -100,8 +130,14 @@ static int call_rt(const uint256& contract, const std::vector<std::string> &args
 
     int flag;
     while (fread((void *) &flag, sizeof(int), 1, pipe_state_read) != 0) {
-        if (flag == BYTE_READ_STATE) {                // read state
-            fwrite((void *) &state[0], state.size(), 1, pipe_state_write);
+        if (flag == BYTE_READ_STATE) {// read state
+            static struct {
+                int a;     
+                int b;
+            } stateTest;
+            stateTest.a = 20;
+            stateTest.b = 22;          
+            fwrite((void *) &stateTest, sizeof(stateTest), 1, pipe_state_write);
         } else if (flag > 0) {          // write state
             state.resize(flag);
             int ret = fread((void *) &state[0], state.size(), 1, pipe_state_read);
