@@ -23,4 +23,4 @@ EXPOSE 2500
 
 
 # make
-RUN cd ~/Desktop/ourchain && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && make -j8 && make install && ldconfig && mkdir ~/.bitcoin/
+RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && make -j8 && make install && ldconfig && mkdir ~/.bitcoin/

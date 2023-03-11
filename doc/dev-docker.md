@@ -28,20 +28,22 @@ docker run -it [IMAGE ID]
 ```bash
 # 貼上設置內容
 vim /root/.bitcoin/bitcoin.conf
-# 啟動
-bitcoind --regtest --daemon
+# 啟動 (BUG:會遇到吃不到代碼更新, 所以直接執行 local)
+./src/bitcoind --regtest --daemon
 # 停止
-bitcoin-cli stop
+./src/bitcoin-cli stop
 # 教學
-bitcoin-cli help
+./src/bitcoin-cli help
 # 獲取餘額
-bitcoin-cli getbalance
+./src/bitcoin-cli getbalance
 # 挖礦給自己
-bitcoin-cli generate 1
+./src/bitcoin-cli generate 1
 # 發布合約
-bitcoin-cli deploycontract ~/Desktop/ourchain/sampleContract.c
+./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.c
 # 執行合約 (can check info in ~/.bitcoin/regtest/contracts)
-bitcoin-cli callcontract "contract txid when deploy" "arg1" "arg2" ...
+./src/bitcoin-cli callcontract "contract txid when deploy" "arg1" "arg2" ...
+# 獲取合約列印訊息
+./src/bitcoin-cli dumpcontractmessage "txid"
 ```
 
 設置內容
@@ -69,16 +71,53 @@ docker start [CONTAINER ID]
 ## 檔案編輯與執行
 
 ### 編輯
+
 - 打開 VS Code
 - 最左邊一排 icon 內，點 Remote Explorer
 - 按下正確的 Container 後，出現的圖標中按下 Attach to Container
 - 接著會自動開一個新的 VS Code，左下角綠底的部分會顯示該 Container 的 Image ID
 - 最左邊一排 icon 內，點 Explorer
 - 路徑選擇 ourchain 所在的位置打開即可
+
 ### 執行
+
 - VS Code 最上方工具列選擇 Terminal > New Terminal 或是用快捷鍵 Ctrl+Shift+`
 - 也可以利用 docker desktop 開啟 container 內部 Terminal
 
 ## 刪除
 
 請利用 docker desktop 照直覺操作即可
+
+## 操作筆記
+
+編譯 libourcontract (一般 make 改不到 dll 的相依)
+
+```
+make && make install && ldconfig
+```
+
+kill bitcoin
+
+```
+pidof bitcoind
+kill -9 pid
+```
+
+kill contract 殭屍線程
+
+```
+netstat -lpn |grep 18444
+kill pid
+```
+
+MQ
+
+```
+ipcs
+ipcrm -a
+```
+
+## 當前 bug
+
+因未知原因 callcontract 會被呼叫兩次, 導致偶爾會發生 lock, 挖礦指令會卡住
+下指令 `ipcrm -a` 即可解開
