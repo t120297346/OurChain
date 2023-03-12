@@ -8,6 +8,7 @@
 #include "util.h"
 #include <leveldb/db.h>
 #include <vector>
+#include <string>
 
 typedef unsigned char uchar;
 
@@ -24,9 +25,9 @@ public:
     // disconnect contract DB
     ~ContractDBWrapper();
     // get state
-    void getState();
+    std::string getState(std::string key);
     // set state
-    void setState();
+    void setState(std::string key, std::string buf);
 };
 
 #endif // BITCOIN_CONTRACT_PROCESSING_H

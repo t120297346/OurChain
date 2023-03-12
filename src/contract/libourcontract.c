@@ -6,6 +6,8 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <linux/limits.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -206,19 +208,16 @@ int call_contract(const char* contract, int argc, char** argv)
         err_printf("call_contract: path too long\n");
         return EXIT_FAILURE;
     }
-
     void* handle = dlopen(filename, RTLD_LAZY);
     if (handle == NULL) {
-        err_printf("call_contract: dlopen failed\n");
+        err_printf("call_contract: dlopen failed %s\n", filename);
         return EXIT_FAILURE;
     }
-
     int (*contract_main)(int, char**) = dlsym(handle, "contract_main");
     if (contract_main == NULL) {
         err_printf("call_contract: %s\n", dlerror());
         return EXIT_FAILURE;
     }
-
     push(contract);
     int ret = contract_main(argc, argv);
     pop();
@@ -338,31 +337,33 @@ static int state_close()
 
 int state_read(void* buf, int count)
 {
-    // if (curr_frame->state_fd == -1) {
-    //     if (state_open(O_RDONLY) == -1) return -1;
-    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_RDONLY) {
-    //     if (state_close() == -1) return -1;
-    //     if (state_open(O_RDONLY) == -1) return -1;
-    // }
-
-    // return read(curr_frame->state_fd, buf, count);
-    int flag = BYTE_READ_STATE;
-    fwrite((void*)&flag, sizeof(int), 1, out);
-    return fread(buf, 1, count, in);
+    int msg_id = 0;
+    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
+    if (msg_id == -1) {
+        err_printf("message create error\n");
+        return -1;
+    }
+    int returnlen = msgrcv(msg_id, buf, count, 0, 0);
+    if (returnlen == -1) {
+        err_printf("message rcv error\n");
+        return -1;
+    };
+    return 0;
 }
 
 int state_write(const void* buf, int count)
 {
-    // if (curr_frame->state_fd == -1) {
-    //     if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
-    // } else if ((fcntl(curr_frame->state_fd, F_GETFL) & O_ACCMODE) != O_WRONLY) {
-    //     if (state_close() == -1) return -1;
-    //     if (state_open(O_WRONLY | O_CREAT) == -1) return -1;
-    // }
-
-    // return write(curr_frame->state_fd, buf, count);
-    fwrite((void*)&count, sizeof(int), 1, out);
-    return fwrite(buf, 1, count, out);
+    int msg_id = 0;
+    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
+    if (msg_id == -1) {
+        err_printf("message create error\n");
+        return -1;
+    }
+    if (msgsnd(msg_id, buf, count, 0) == -1) {
+        err_printf("message send error\n");
+        return -1;
+    }
+    return 0;
 }
 
 int send_money(const char* addr, CAmount amount)

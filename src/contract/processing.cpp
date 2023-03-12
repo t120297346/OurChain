@@ -12,6 +12,8 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/msg.h>
+#include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -48,20 +50,16 @@ ContractDBWrapper::~ContractDBWrapper()
     db = nullptr;
 };
 
-void ContractDBWrapper::setState()
+void ContractDBWrapper::setState(std::string key, std::string buf)
 {
-    std::string key = "gonev";
-	std::string value = "a handsome man";
-	db->Put(leveldb::WriteOptions(), key, value);
-
+	db->Put(leveldb::WriteOptions(), key, buf);
 };
 
-void ContractDBWrapper::getState()
+std::string ContractDBWrapper::getState(std::string key)
 {
-    std::string key_ = "gonev";
-	std::string val_ = "";
-	db->Get(leveldb::ReadOptions(), key_, &val_);
-    // LogPrintf("ContractLevelDB value is %s\n", val_);
+    std::string buf;
+	db->Get(leveldb::ReadOptions(), key, &buf);
+    return buf;
 };
 
 static int call_mkdll(const uint256& contract)
@@ -121,6 +119,36 @@ static int call_rt(const uint256& contract, const std::vector<std::string> &args
         execvp("ourcontract-rt", (char* const*)argv);
         exit(EXIT_FAILURE);
     }
+
+    // use msg queue exchange message
+    int msg_id = 0;
+    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
+    if (msg_id == -1)
+    {
+        LogPrintf("message create error\n");
+    }
+    struct msgbuf {
+        long mtype;
+        char buf[1024];
+    };
+    struct msgbuf msgbuffer;
+    msgbuffer.mtype = 1;
+    ContractDBWrapper cdb;
+    std::string hex_ctid(contract.GetHex());
+    std::string newbuffer = cdb.getState(hex_ctid.c_str());
+    strcpy(msgbuffer.buf, newbuffer.c_str());
+    if (msgsnd(msg_id, &msgbuffer, sizeof(msgbuffer), 0) == -1)
+    {
+        LogPrintf("message send error\n");
+    }
+    if (msgrcv(msg_id, &msgbuffer, sizeof(msgbuffer), 0, 0) == -1)
+    {
+        LogPrintf("message recieve error\n");
+    }
+    std::string newState(msgbuffer.buf);
+    cdb.setState(hex_ctid.c_str(), newState);
+    // msgctl(msg_id, IPC_RMID, NULL); // kill msg queue
+
     // read or write state or send money
     close(fd_state_read[1]);
     close(fd_state_write[0]);
@@ -131,13 +159,7 @@ static int call_rt(const uint256& contract, const std::vector<std::string> &args
     int flag;
     while (fread((void *) &flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == BYTE_READ_STATE) {// read state
-            static struct {
-                int a;     
-                int b;
-            } stateTest;
-            stateTest.a = 20;
-            stateTest.b = 22;          
-            fwrite((void *) &stateTest, sizeof(stateTest), 1, pipe_state_write);
+            fwrite((void *) &state[0], state.size(), 1, pipe_state_write);
         } else if (flag > 0) {          // write state
             state.resize(flag);
             int ret = fread((void *) &state[0], state.size(), 1, pipe_state_read);

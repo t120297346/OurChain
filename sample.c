@@ -1,17 +1,37 @@
 #include <ourcontract.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-static struct {
-  int a;
-  int b;
-} state;
+struct stateBuf {
+  long mtype;
+  char buf[1024];
+};
+
+// TODO: ADD https://github.com/protobuf-c/protobuf-c to auto Serialize
+
+// struct state {
+//   int senderId;
+//   int sequenceNumber;
+//   char data[50];
+// }
+
+// void Serialize() {}
+// void Deserialize(const std::string& iString) {}
 
 int contract_main(int argc, char **argv) {
-  printf("hello world");
-  // state_read(&state, sizeof(state));
-  err_printf("state is %d %d!\n", state.a, state.b);
+  err_printf("start contract\n");
+  struct stateBuf buf;
+  if (state_read(&buf, sizeof(buf)) == -1) {
+    err_printf("read state error\n");
+  };
+  err_printf("get state %s\n", buf.buf);
+  buf.mtype = 1;
+  strcpy(buf.buf, "Hello World!");
+  if (state_write(&buf, sizeof(buf)) == -1) {
+    err_printf("send state error\n");
+  };
   return 0;
 }
