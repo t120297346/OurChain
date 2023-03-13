@@ -343,7 +343,7 @@ int state_read(void* buf, int count)
         err_printf("message create error\n");
         return -1;
     }
-    int returnlen = msgrcv(msg_id, buf, count, 0, 0);
+    int returnlen = msgrcv(msg_id, buf, count, 1, 0);
     if (returnlen == -1) {
         err_printf("message rcv error\n");
         return -1;

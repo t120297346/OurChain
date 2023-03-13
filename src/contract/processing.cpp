@@ -132,16 +132,16 @@ static int call_rt(const uint256& contract, const std::vector<std::string> &args
         char buf[1024];
     };
     struct msgbuf msgbuffer;
-    msgbuffer.mtype = 1;
     ContractDBWrapper cdb;
     std::string hex_ctid(contract.GetHex());
     std::string newbuffer = cdb.getState(hex_ctid.c_str());
     strcpy(msgbuffer.buf, newbuffer.c_str());
+    msgbuffer.mtype = 1;
     if (msgsnd(msg_id, &msgbuffer, sizeof(msgbuffer), 0) == -1)
     {
         LogPrintf("message send error\n");
     }
-    if (msgrcv(msg_id, &msgbuffer, sizeof(msgbuffer), 0, 0) == -1)
+    if (msgrcv(msg_id, &msgbuffer, sizeof(msgbuffer), 2, 0) == -1)
     {
         LogPrintf("message recieve error\n");
     }

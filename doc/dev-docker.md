@@ -41,9 +41,9 @@ vim /root/.bitcoin/bitcoin.conf
 # 發布合約
 ./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.c
 # 執行合約 (can check info in ~/.bitcoin/regtest/contracts)
-./src/bitcoin-cli callcontract "contract txid when deploy" "arg1" "arg2" ...
+./src/bitcoin-cli callcontract "contract address when deploy" "arg1" "arg2" ...
 # 獲取合約列印訊息
-./src/bitcoin-cli dumpcontractmessage "txid"
+./src/bitcoin-cli dumpcontractmessage "contract address"
 ```
 
 設置內容
@@ -116,8 +116,3 @@ MQ
 ipcs
 ipcrm -a
 ```
-
-## 當前 bug
-
-因未知原因 callcontract 會被呼叫兩次, 導致偶爾會發生 lock, 挖礦指令會卡住
-下指令 `ipcrm -a` 即可解開

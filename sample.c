@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// should be def by server
 struct stateBuf {
   long mtype;
   char buf[1024];
@@ -28,7 +29,7 @@ int contract_main(int argc, char **argv) {
     err_printf("read state error\n");
   };
   err_printf("get state %s\n", buf.buf);
-  buf.mtype = 1;
+  buf.mtype = 2; // 必須設置為二, TODO: 封裝此變數到 lib 內
   strcpy(buf.buf, "Hello World!");
   if (state_write(&buf, sizeof(buf)) == -1) {
     err_printf("send state error\n");
