@@ -337,33 +337,31 @@ static int state_close()
 
 int state_read(void* buf, int count)
 {
-    int msg_id = 0;
-    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
-    if (msg_id == -1) {
-        err_printf("message create error\n");
-        return -1;
-    }
-    int returnlen = msgrcv(msg_id, buf, count, 1, 0);
-    if (returnlen == -1) {
-        err_printf("message rcv error\n");
-        return -1;
-    };
+    // int server_to_client;
+    // char *myfifo = "/tmp/server_to_client_fifo";
+    // if(mkfifo(myfifo,0666) == -1){
+    //     err_printf("mkfifo error\n");
+    //     return -1;
+    // }
+    // server_to_client = open(myfifo, O_RDONLY);
+    // if(server_to_client == -1){
+    //     err_printf("fifo open error\n");
+    //     return -1;
+    // }
+    // read(server_to_client,buf,count);
+    // close(server_to_client);
+    // unlink(myfifo);
+
+    int flag = -1 * count;
+    fwrite((void*)&flag, sizeof(int), 1, out);
+    // return fread(buf, count, 1, in);
     return 0;
 }
 
 int state_write(const void* buf, int count)
 {
-    int msg_id = 0;
-    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
-    if (msg_id == -1) {
-        err_printf("message create error\n");
-        return -1;
-    }
-    if (msgsnd(msg_id, buf, count, 0) == -1) {
-        err_printf("message send error\n");
-        return -1;
-    }
-    return 0;
+    fwrite((void*)&count, sizeof(int), 1, out);
+    return fwrite(buf, count, 1, out);
 }
 
 int send_money(const char* addr, CAmount amount)
