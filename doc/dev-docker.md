@@ -109,10 +109,3 @@ kill contract 殭屍線程
 netstat -lpn |grep 18444
 kill pid
 ```
-
-MQ
-
-```
-ipcs
-ipcrm -a
-```

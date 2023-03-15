@@ -337,25 +337,11 @@ static int state_close()
 
 int state_read(void* buf, int count)
 {
-    // int server_to_client;
-    // char *myfifo = "/tmp/server_to_client_fifo";
-    // if(mkfifo(myfifo,0666) == -1){
-    //     err_printf("mkfifo error\n");
-    //     return -1;
-    // }
-    // server_to_client = open(myfifo, O_RDONLY);
-    // if(server_to_client == -1){
-    //     err_printf("fifo open error\n");
-    //     return -1;
-    // }
-    // read(server_to_client,buf,count);
-    // close(server_to_client);
-    // unlink(myfifo);
-
     int flag = -1 * count;
     fwrite((void*)&flag, sizeof(int), 1, out);
-    // return fread(buf, count, 1, in);
-    return 0;
+    fflush(out);
+    int ret = fread(buf, count, 1, in);
+    return ret;
 }
 
 int state_write(const void* buf, int count)

@@ -131,34 +131,6 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
         exit(EXIT_FAILURE);
     }
 
-    // use msg queue exchange message
-    // int msg_id = 0;
-    // msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
-    // if (msg_id == -1)
-    // {
-    //     LogPrintf("message create error\n");
-    // }
-    // struct msgbuf {
-    //     long mtype;
-    //     char buf[1024];
-    // };
-    // struct msgbuf msgbuffer;
-    // ContractDBWrapper cdb;
-    // std::string hex_ctid(contract.GetHex());
-    // std::string newbuffer = cdb.getState(hex_ctid.c_str());
-    // strcpy(msgbuffer.buf, newbuffer.c_str());
-    // msgbuffer.mtype = 1;
-    // if (msgsnd(msg_id, &msgbuffer, sizeof(msgbuffer), 0) == -1)
-    // {
-    //     LogPrintf("message send error\n");
-    // }
-    // if (msgrcv(msg_id, &msgbuffer, sizeof(msgbuffer), 2, 0) == -1)
-    // {
-    //     LogPrintf("message recieve error\n");
-    // }
-    // std::string newState(msgbuffer.buf);
-    // cdb.setState(hex_ctid.c_str(), newState);
-    // msgctl(msg_id, IPC_RMID, NULL); // kill msg queue
     // read or write state or send money
     close(fd_state_read[1]);
     close(fd_state_write[0]);
@@ -170,43 +142,16 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     std::string hex_ctid(contract.GetHex());
     int flag;
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
-        // LogPrintf("message recieve %d\n", flag);
         if (flag < 0) { // read state
             flag = flag * -1;
             std::string newbuffer = cdb.getState(hex_ctid.c_str());
             if (cdb.mystatus.ok()) {
-                // LogPrintf("OK\n");
-                // struct stateBuf* tmpbuf = ( struct stateBuf*)newbuffer.data();
-                // LogPrintf("tmpbuf %s\n",tmpbuf->buf );
-                // LogPrintf("message recieve write %d\n",newbuffer.size());
                 fwrite((void*)newbuffer.data(), newbuffer.size(), 1, pipe_state_write);
-                // int server_to_client;
-                // char *myfifo = "/tmp/server_to_client_fifo";
-                // if(mkfifo(myfifo,0666) == -1){
-                //     LogPrintf("mkfifo error\n");
-                // }
-                // server_to_client = open(myfifo, O_WRONLY);
-                // if(server_to_client == -1){
-                //     LogPrintf("fifo open error\n");
-                // }
-                // write(server_to_client, newbuffer.data(),newbuffer.size());
-                // close(server_to_client);
-                // unlink(myfifo);
+                fflush(pipe_state_write);
             } else {
                 char* tmp = (char*)malloc(flag);
                 fwrite((void*)tmp, flag, 1, pipe_state_write);
-                // int server_to_client;
-                // char *myfifo = "/tmp/server_to_client_fifo";
-                // if(mkfifo(myfifo,0666) == -1){
-                //     LogPrintf("mkfifo error\n");
-                // }
-                // server_to_client = open(myfifo, O_WRONLY);
-                // if(server_to_client == -1){
-                //     LogPrintf("fifo open error\n");
-                // }
-                // write(server_to_client, tmp,flag);
-                // close(server_to_client);
-                // unlink(myfifo);
+                fflush(pipe_state_write);
                 free(tmp);
             }
         } else if (flag > 0) { // write state
