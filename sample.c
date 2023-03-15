@@ -5,7 +5,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-// should be def by server
 struct stateBuf {
   long mtype;
   char buf[1024];
