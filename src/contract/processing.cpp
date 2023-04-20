@@ -12,7 +12,7 @@
 
 #include <stdlib.h>
 #include <sys/ipc.h>
-#include <sys/msg.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -51,29 +51,25 @@ ContractDBWrapper::~ContractDBWrapper()
     db = nullptr;
 };
 
-void ContractDBWrapper::setState(std::string key, std::string buf)
+void ContractDBWrapper::setState(std::string key, void* buf, size_t size)
 {
-    db->Put(leveldb::WriteOptions(), key, buf);
-    // struct state {
-    //     int a;
-    //     int b;
-    // };
-    // struct state s = {55,688};
-    // leveldb::Slice value((char*)&s, sizeof(s));
-    // db->Put(leveldb::WriteOptions(), key, value);
+    leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
+    mystatus = db->Put(leveldb::WriteOptions(), key, valueSlice);
+    LogPrintf("put result: %d\n", mystatus.ok());
+    assert(mystatus.ok());
 };
 
 std::string ContractDBWrapper::getState(std::string key)
 {
     std::string buf;
-    db->Get(leveldb::ReadOptions(), key, &buf);
-    // struct state {
-    //     int a;
-    //     int b;
+    mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
+    LogPrintf("get result: %d\n", mystatus.ok());
+    // struct stateBuf {
+    //   long mtype;
+    //   char buf[1024];
     // };
-    // struct state* s = (struct state*) buf.data();
-    // LogPrintf("%d %d\n",s->a,s->b);
-    // return "Hello world!";
+    // struct stateBuf* tmpbuf = ( struct stateBuf*)buf.data();
+    // LogPrintf("get tmpbuf: %s\n", tmpbuf->buf);
     return buf;
 };
 
@@ -135,32 +131,6 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
         exit(EXIT_FAILURE);
     }
 
-    // use msg queue exchange message
-    int msg_id = 0;
-    msg_id = msgget((key_t)1001, IPC_CREAT | 0777);
-    if (msg_id == -1) {
-        LogPrintf("message create error\n");
-    }
-    struct msgbuf {
-        long mtype;
-        char buf[1024];
-    };
-    struct msgbuf msgbuffer;
-    ContractDBWrapper cdb;
-    std::string hex_ctid(contract.GetHex());
-    std::string newbuffer = cdb.getState(hex_ctid.c_str());
-    strcpy(msgbuffer.buf, newbuffer.c_str());
-    msgbuffer.mtype = 1;
-    if (msgsnd(msg_id, &msgbuffer, sizeof(msgbuffer), 0) == -1) {
-        LogPrintf("message send error\n");
-    }
-    if (msgrcv(msg_id, &msgbuffer, sizeof(msgbuffer), 2, 0) == -1) {
-        LogPrintf("message recieve error\n");
-    }
-    std::string newState(msgbuffer.buf);
-    cdb.setState(hex_ctid.c_str(), newState);
-    // msgctl(msg_id, IPC_RMID, NULL); // kill msg queue
-
     // read or write state or send money
     close(fd_state_read[1]);
     close(fd_state_write[0]);
@@ -168,55 +138,73 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     FILE* pipe_state_read = fdopen(fd_state_read[0], "rb");
     FILE* pipe_state_write = fdopen(fd_state_write[1], "wb");
 
+    ContractDBWrapper cdb;
+    std::string hex_ctid(contract.GetHex());
     int flag;
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
-        if (flag == BYTE_READ_STATE) { // read state
-            fwrite((void*)&state[0], state.size(), 1, pipe_state_write);
-        } else if (flag > 0) { // write state
-            state.resize(flag);
-            int ret = fread((void*)&state[0], state.size(), 1, pipe_state_read);
-            assert(ret >= 0);
-        } else if (flag == BYTE_SEND_TO_ADDRESS) { // send to address
-            char addr_to[40];
-            CAmount amount;
-            int ret = fread((void*)addr_to, sizeof(char), 40, pipe_state_read);
-            assert(ret >= 0);
-            ret = fread((void*)&amount, sizeof(long long), 1, pipe_state_read);
-            assert(ret >= 0);
-            CBitcoinAddress address(addr_to);
-            vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address.Get())));
-        } else if (flag == BYTE_SEND_TO_CONTRACT) { // send to contract
-            char addr_to[64];
-            CAmount amount;
-            int ret = fread((void*)addr_to, sizeof(char), 64, pipe_state_read);
-            assert(ret >= 0);
-            ret = fread((void*)&amount, sizeof(long long), 1, pipe_state_read);
-            assert(ret >= 0);
-            uint256 address = uint256S(addr_to);
-            vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address)));
-        } else if (flag == BYTE_CALL_CONTRACT) {
-            Contract contract;
-            contract.action = ACTION_CALL;
-            char contractName[65] = {0};
-            int ret = fread((void*)contractName, sizeof(char), 64, pipe_state_read);
-            assert(ret >= 0);
-            contract.address = uint256S(contractName);
-            int argc;
-            ret = fread((void*)&argc, sizeof(int), 1, pipe_state_read);
-            assert(ret >= 0);
-            for (int i = 0; i < argc; i++) {
-                int argLen;
-                ret = fread((void*)&argLen, sizeof(int), 1, pipe_state_read);
-                assert(ret >= 0);
-                char* argName = new char[argLen + 1]();
-                ret = fread((void*)argName, sizeof(char), argLen, pipe_state_read);
-                assert(ret >= 0);
-                contract.args.push_back(std::string(argName));
+        if (flag < 0) { // read state
+            flag = flag * -1;
+            std::string newbuffer = cdb.getState(hex_ctid.c_str());
+            if (cdb.mystatus.ok()) {
+                fwrite((void*)newbuffer.data(), newbuffer.size(), 1, pipe_state_write);
+                fflush(pipe_state_write);
+            } else {
+                char* tmp = (char*)malloc(flag);
+                fwrite((void*)tmp, flag, 1, pipe_state_write);
+                fflush(pipe_state_write);
+                free(tmp);
             }
-            nextContract.push_back(contract);
+        } else if (flag > 0) { // write state
+            // LogPrintf("message recieve write %d\n", flag);
+            // state.resize(flag);
+            char* tmp = (char*)malloc(flag);
+            int ret = fread(tmp, 1, flag, pipe_state_read);
+            cdb.setState(hex_ctid.c_str(), tmp, flag);
+            assert(ret >= 0);
         } else {
-            puts("Error: pipe");
+            break;
         }
+        // else if (flag == BYTE_SEND_TO_ADDRESS) {        // send to address
+        //     char addr_to[40];
+        //     CAmount amount;
+        //     int ret = fread((void *) addr_to, sizeof(char), 40, pipe_state_read);
+        //     assert(ret >= 0);
+        //     ret = fread((void *) &amount, sizeof(long long), 1, pipe_state_read);
+        //     assert(ret >= 0);
+        //     CBitcoinAddress address(addr_to);
+        //     vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address.Get())));
+        // } else if (flag == BYTE_SEND_TO_CONTRACT) {        // send to contract
+        //     char addr_to[64];
+        //     CAmount amount;
+        //     int ret = fread((void *) addr_to, sizeof(char), 64, pipe_state_read);
+        //     assert(ret >= 0);
+        //     ret = fread((void *) &amount, sizeof(long long), 1, pipe_state_read);
+        //     assert(ret >= 0);
+        //     uint256 address = uint256S(addr_to);
+        //     vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address)));
+        // } else if (flag == BYTE_CALL_CONTRACT) {
+        //     Contract contract;
+        //     contract.action = ACTION_CALL;
+        //     char contractName[65] = {0};
+        //     int ret = fread((void *) contractName, sizeof(char), 64, pipe_state_read);
+        //     assert(ret >= 0);
+        //     contract.address = uint256S(contractName);
+        //     int argc;
+        //     ret = fread((void *) &argc, sizeof(int), 1, pipe_state_read);
+        //     assert(ret >= 0);
+        //     for (int i = 0; i < argc; i++) {
+        //         int argLen;
+        //         ret = fread((void *) &argLen, sizeof(int), 1, pipe_state_read);
+        //         assert(ret >= 0);
+        //         char *argName = new char[argLen + 1]();
+        //         ret = fread((void *) argName, sizeof(char), argLen, pipe_state_read);
+        //         assert(ret >= 0);
+        //         contract.args.push_back(std::string(argName));
+        //     }
+        //     nextContract.push_back(contract);
+        // } else {
+        //     puts("Error: pipe");
+        // }
     }
     fclose(pipe_state_read);
     fclose(pipe_state_write);
