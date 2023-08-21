@@ -84,6 +84,29 @@ docker start [CONTAINER ID]
 - VS Code 最上方工具列選擇 Terminal > New Terminal 或是用快捷鍵 Ctrl+Shift+`
 - 也可以利用 docker desktop 開啟 container 內部 Terminal
 
+## 利用 gdb 執行配合智能搜尋
+
+確保 container 內 vscode 安裝以下插件, 且無安裝衝突插件
+
+- ms-vscode.cmake-tools
+- ms-vscode.cpptools
+- ms-vscode.cpptools-extension-pack
+- ms-vscode.cpptools-themes
+- twxs.cmake
+
+此時配合 `.vscode` 內檔案應可以使用 debuger 和 智能提示
+
+此外 `c_cpp_properties` 內可以視情況設置以下參數
+範例為在 arm 晶片使用 clang 編譯配合 gnu17 標準
+
+```
+// 要用的編譯器標準
+"cStandard": "gnu17",
+"cppStandard": "gnu++17",
+// 要用的編譯器
+"intelliSenseMode": "clang-arm64"
+```
+
 ## 刪除
 
 請利用 docker desktop 照直覺操作即可
