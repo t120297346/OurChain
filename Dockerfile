@@ -17,6 +17,8 @@ RUN apt-get install libqrencode-dev -y
 RUN apt-get install libgmp-dev libgmp3-dev -y 
 ## vim
 RUN apt-get install vim -y
+## gdb
+RUN apt-get install gdb -y
 
 EXPOSE 22
 EXPOSE 2500
