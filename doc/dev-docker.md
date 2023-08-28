@@ -16,11 +16,11 @@
 
 ```bash
 # 安裝 image
-docker build .
+docker build -t our-chain .
 # 獲取 id
 docker image ls
 # 從 image 生成 container 且啟動
-docker run -it [IMAGE ID]
+docker run --name our-chain -it [IMAGE ID]
 ```
 
 設置環境變數與啟動測試
