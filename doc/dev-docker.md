@@ -94,6 +94,8 @@ docker start [CONTAINER ID]
 - ms-vscode.cpptools-themes
 - twxs.cmake
 
+可以使用 `code --list-extensions` 在 CLI 確認
+
 此時配合 `.vscode` 內檔案應可以使用 debuger 和 智能提示
 
 此外 `c_cpp_properties` 內可以視情況設置以下參數
