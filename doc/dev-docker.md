@@ -16,11 +16,11 @@
 
 ```bash
 # 安裝 image
-docker build .
+docker build -t our-chain .
 # 獲取 id
 docker image ls
 # 從 image 生成 container 且啟動
-docker run -it [IMAGE ID]
+docker run --name our-chain -it [IMAGE ID]
 ```
 
 設置環境變數與啟動測試
@@ -93,6 +93,8 @@ docker start [CONTAINER ID]
 - ms-vscode.cpptools-extension-pack
 - ms-vscode.cpptools-themes
 - twxs.cmake
+
+可以使用 `code --list-extensions` 在 CLI 確認
 
 此時配合 `.vscode` 內檔案應可以使用 debuger 和 智能提示
 
