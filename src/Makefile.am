@@ -370,9 +370,9 @@ endif
 # ourcontract library
 include_HEADERS += contract/ourcontract.h
 contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract
-contract_libourcontract_la_CFLAGS = $(AM_CFLAGS) $(PIE_FLAGS)
+contract_libourcontract_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 contract_libourcontract_la_SOURCES = \
-  contract/libourcontract.c \
+  contract/libourcontract.cpp \
   contract/ourcontract.h
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
@@ -455,10 +455,10 @@ bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 
 # ourcontract-rt binary #
 ourcontract_rt_SOURCES = \
-  contract/ourcontract-rt.c \
+  contract/ourcontract-rt.cpp \
   contract/ourcontract.h
 ourcontract_rt_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract
-ourcontract_rt_CFLAGS = $(AM_CFLAGS) $(PIE_FLAGS)
+ourcontract_rt_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 ourcontract_rt_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 ourcontract_rt_LDADD = \

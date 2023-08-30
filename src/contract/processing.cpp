@@ -220,7 +220,7 @@ bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std:
     if (contract.action == contract_action::ACTION_NEW) {
         fs::path new_dir = GetContractsDir() / contract.address.GetHex();
         fs::create_directories(new_dir);
-        std::ofstream contract_code(new_dir.string() + "/code.c");
+        std::ofstream contract_code(new_dir.string() + "/code.cpp");
         contract_code.write(contract.code.c_str(), contract.code.size());
         contract_code.close();
 

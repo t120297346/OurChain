@@ -3262,16 +3262,16 @@ static void SendContractTx(CWallet * const pwallet, const Contract *contract, co
 static bool ReadFile(const std::string &filename, std::string &buf)
 {
     if((filename.find("http") < filename.length()) && (filename.find("http") >= 0)){
-        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.c";
+        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.cpp";
         system(command.c_str());    
 
         std::string line;
-        std::ifstream file(GetDataDir().string() + "/code.c");
+        std::ifstream file(GetDataDir().string() + "/code.cpp");
         if (file.is_open() == false) return false;
         while (getline(file, line)) buf += (line + "\n");
         file.close();
 
-        command = "rm " + GetDataDir().string() + "/code.c";
+        command = "rm " + GetDataDir().string() + "/code.cpp";
         system(command.c_str());
         return true;
     }

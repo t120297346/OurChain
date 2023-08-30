@@ -138,23 +138,23 @@ bool parsefixedpoint(const char* val, int decimals, int64_t* amount_out)
 
 static void push(const char* name)
 {
-    frame* new = malloc(sizeof(frame));
+    frame* newFrame = new frame;
 
-    if (new == NULL) {
-        err_printf("push: malloc failed\n");
+    if (newFrame == nullptr) {
+        err_printf("push: new failed\n");
         exit(EXIT_FAILURE);
     }
 
-    new->name = name;
-    new->out_fp = NULL;
-    new->state_fd = -1;
-    if (curr_frame == NULL)
-        new->depth = 1;
+    newFrame->name = name;
+    newFrame->out_fp = nullptr;
+    newFrame->state_fd = -1;
+    if (curr_frame == nullptr)
+        newFrame->depth = 1;
     else
-        new->depth = curr_frame->depth + 1;
+        newFrame->depth = curr_frame->depth + 1;
 
-    new->parent = curr_frame;
-    curr_frame = new;
+    newFrame->parent = curr_frame;
+    curr_frame = newFrame;
 }
 
 static void pop()
@@ -213,7 +213,7 @@ int call_contract(const char* contract, int argc, char** argv)
         err_printf("call_contract: dlopen failed %s\n", filename);
         return EXIT_FAILURE;
     }
-    int (*contract_main)(int, char**) = dlsym(handle, "contract_main");
+    int (*contract_main)(int, char**) = reinterpret_cast<int (*)(int, char**)>(dlsym(handle, "contract_main"));
     if (contract_main == NULL) {
         err_printf("call_contract: %s\n", dlerror());
         return EXIT_FAILURE;

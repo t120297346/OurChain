@@ -1,5 +1,7 @@
 *.tar.gz
 
+.vscode/*.vc.*
+
 *.exe
 src/bitcoin
 src/bitcoind
