@@ -10,7 +10,7 @@ struct stateBuf {
   char buf[1024];
 };
 
-int contract_main(int argc, char **argv) {
+extern "C" int contract_main(int argc, char **argv) {
   err_printf("start contract\n");
   struct stateBuf buf;
   if (state_read(&buf, sizeof(struct stateBuf)) == -1) {

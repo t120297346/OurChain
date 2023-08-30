@@ -39,7 +39,7 @@ vim /root/.bitcoin/bitcoin.conf
 # 挖礦給自己
 ./src/bitcoin-cli generate 1
 # 發布合約
-./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.c
+./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.cpp
 # 執行合約 (can check info in ~/.bitcoin/regtest/contracts)
 ./src/bitcoin-cli callcontract "contract address when deploy" "arg1" "arg2" ...
 # 獲取合約列印訊息
