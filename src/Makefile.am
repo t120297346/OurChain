@@ -377,6 +377,15 @@ contract_libourcontract_la_SOURCES = \
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
 
+# json serialize library #
+include_HEADERS += json/json.hpp
+json_libjson_la_SOURCES = \
+  json/json.hpp
+json_libjson_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/json
+json_libjson_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+json_libjson_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+#
+
 # cli: shared between bitcoin-cli and bitcoin-qt
 libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

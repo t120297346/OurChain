@@ -26,3 +26,6 @@ EXPOSE 2500
 
 # make
 RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && make -j8 && make install && ldconfig && mkdir ~/.bitcoin/
+
+# set config
+RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=0.0.0.0/0\nregtest=1" >> /root/.bitcoin/bitcoin.conf

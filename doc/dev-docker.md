@@ -26,8 +26,6 @@ docker run --name our-chain -it [IMAGE ID]
 設置環境變數與啟動測試
 
 ```bash
-# 貼上設置內容
-vim /root/.bitcoin/bitcoin.conf
 # 啟動 (BUG:會遇到吃不到代碼更新, 所以直接執行 local)
 ./src/bitcoind --regtest --daemon
 # 停止
@@ -46,18 +44,11 @@ vim /root/.bitcoin/bitcoin.conf
 ./src/bitcoin-cli dumpcontractmessage "contract address"
 ```
 
-設置內容
+相關位置
 
-```
-server=1
-rpcuser=test
-rpcpassword=test
-rpcport=8332
-rpcallowip=0.0.0.0/0
-regtest=1
-```
-
-啟動後可以在 Desktop 找到專案
+- 在 `/root/Desktop/ourchain` 可以找到專案
+- 在 `/root/.bitcoin/bitcoin.conf` 找到設置
+- 在 `/root/.bitcoin/regtest/contracts` 找到智能合約
 
 ## 重複使用 container
 
