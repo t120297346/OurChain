@@ -17,10 +17,8 @@
 ```bash
 # 安裝 image (don't want cache => `docker build --no-cache -t our-chain .`)
 docker build -t our-chain .
-# 獲取 id
-docker image ls
 # 從 image 生成 container 且啟動
-docker run --name our-chain -it [IMAGE ID]
+run --name our-chain -it our-chain
 ```
 
 設置環境變數與啟動測試
