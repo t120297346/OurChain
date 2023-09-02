@@ -15,7 +15,7 @@
 在本專案根目錄執行
 
 ```bash
-# 安裝 image
+# 安裝 image (don't want cache => `docker build --no-cache -t our-chain .`)
 docker build -t our-chain .
 # 獲取 id
 docker image ls
