@@ -7,9 +7,9 @@
                 "${workspaceFolder}/src"
             ],
             "compilerPath": "/usr/bin/gcc",
-            "cStandard": "gnu17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "clang-arm64",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "intelliSenseMode": "linux-gcc-arm64",
             "browse": {
                 "path": [
                     "${workspaceFolder}/src"
