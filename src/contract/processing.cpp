@@ -55,7 +55,7 @@ void ContractDBWrapper::setState(std::string key, void* buf, size_t size)
 {
     leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
     mystatus = db->Put(leveldb::WriteOptions(), key, valueSlice);
-    LogPrintf("put result: %d\n", mystatus.ok());
+    // LogPrintf("put result: %d\n", mystatus.ok());
     assert(mystatus.ok());
 };
 
@@ -63,13 +63,7 @@ std::string ContractDBWrapper::getState(std::string key)
 {
     std::string buf;
     mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
-    LogPrintf("get result: %d\n", mystatus.ok());
-    // struct stateBuf {
-    //   long mtype;
-    //   char buf[1024];
-    // };
-    // struct stateBuf* tmpbuf = ( struct stateBuf*)buf.data();
-    // LogPrintf("get tmpbuf: %s\n", tmpbuf->buf);
+    // LogPrintf("get result: %d\n", mystatus.ok());
     return buf;
 };
 
@@ -142,17 +136,18 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     std::string hex_ctid(contract.GetHex());
     int flag;
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
-        if (flag < 0) { // read state
-            flag = flag * -1;
+        if (flag == 0) { // read state
             std::string newbuffer = cdb.getState(hex_ctid.c_str());
             if (cdb.mystatus.ok()) {
+                flag = newbuffer.size();
+                fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
+                fflush(pipe_state_write);
                 fwrite((void*)newbuffer.data(), newbuffer.size(), 1, pipe_state_write);
                 fflush(pipe_state_write);
             } else {
-                char* tmp = (char*)malloc(flag);
-                fwrite((void*)tmp, flag, 1, pipe_state_write);
+                // client will not recive data after flag is 0
+                fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
                 fflush(pipe_state_write);
-                free(tmp);
             }
         } else if (flag > 0) { // write state
             // LogPrintf("message recieve write %d\n", flag);
