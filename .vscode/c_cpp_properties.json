@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "${workspaceFolder}/src"
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/leveldb/include"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu11",
