@@ -18,7 +18,7 @@
 # 安裝 image (don't want cache => `docker build --no-cache -t our-chain .`)
 docker build -t our-chain .
 # 從 image 生成 container 且啟動
-run --name our-chain -it our-chain
+docker run --name our-chain -it our-chain
 ```
 
 設置環境變數與啟動測試
