@@ -14,6 +14,8 @@ typedef unsigned char uchar;
 
 bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std::vector<uchar>& state, CAmount balance, std::vector<Contract>& nextContract);
 
+std::string call_rt_pure(const uint256& contract, const std::vector<std::string>& args);
+
 class ContractDBWrapper
 {
 public:

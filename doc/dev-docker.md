@@ -38,9 +38,11 @@ docker run --name our-chain -it our-chain
 ./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.cpp
 # 執行合約 (can check info in ~/.bitcoin/regtest/contracts)
 ./src/bitcoin-cli callcontract "contract address when deploy" "arg1" "arg2" ...
-# 獲取合約列印訊息
-./src/bitcoin-cli dumpcontractmessage "contract address"
+# 獲取合約狀態(此為 pure 操作)
+./src/bitcoin-cli dumpcontractmessage "contract address" ""
 ```
+
+can use `bash ./mytest.sh` run contract commands
 
 相關位置
 

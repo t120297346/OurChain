@@ -8,6 +8,7 @@
 #include "chain.h"
 #include "consensus/validation.h"
 #include "contract/contract.h"
+#include "contract/processing.h"
 #include "core_io.h"
 #include "init.h"
 #include "httpserver.h"
@@ -3413,22 +3414,27 @@ UniValue callcontract(const JSONRPCRequest& request)
 
 UniValue dumpcontractmessage(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1) {
+    if (request.fHelp || request.params.size() < 2) {
         throw std::runtime_error(
-            "dumpcontractmessage \"txid\"\n"
-            "\nDump the message file of a smart contract.\n"
+             "dumpcontractmessage \"txid\" ( \"argv[1]\" \"argv[2]\" ... )\n"
+            "\nCall the main function of a smart contract. which can not cause state change\n"
             "\nArguments:\n"
             "1. \"txid\"        (string) The txid of the deployment transaction\n"
+            "2. \"argv[]\"      (string, optional) The arguments to be passed to the main function.\n"
             "\nResult\n"
-            "message           (string) Content of the message file\n"
+            "\"txid\"           (string) The transaction id.\n"
             "\nExamples:\n" +
-            HelpExampleCli("dumpcontractmessage", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\""));
+            HelpExampleCli("dumpcontractmessage", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\" \"arg\""));
     }
 
-    std::string filename = GetDataDir().string() + "/contracts/" + request.params[0].get_str() + "/out";
-    std::string buf;
-    ReadFile(filename, buf);
-
+    // execute contract and get method output
+    uint256 contract_address = uint256S(request.params[0].get_str());
+    std::vector<std::string> args = {};
+    if (request.params.size() > 1) {
+        for (unsigned i = 1; i < request.params.size(); i++)
+            args.push_back(request.params[i].get_str());
+    }
+    std::string buf = call_rt_pure(contract_address, args);
     return buf;
 }
 
@@ -3499,7 +3505,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "removeprunedfunds",        &removeprunedfunds,        true,   {"txid"} },
     { "wallet",             "deploycontract",           &deploycontract,           false,  {"filename","initializer"} },
     { "wallet",             "callcontract",             &callcontract,             false,  {"txid","function"} },
-    { "wallet",             "dumpcontractmessage",      &dumpcontractmessage,      true,   {"txid"} },
+    { "wallet",             "dumpcontractmessage",      &dumpcontractmessage,      true,   {"txid","function"} },
 
     { "generating",         "generate",                 &generate,                 true,   {"nblocks","maxtries"} },
 };
