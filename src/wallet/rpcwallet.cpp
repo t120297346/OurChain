@@ -3435,7 +3435,10 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
             args.push_back(request.params[i].get_str());
     }
     std::string buf = call_rt_pure(contract_address, args);
-    return buf;
+    UniValue uv;
+    const bool ok = uv.read(buf);
+    assert(ok); // parse of valid json should always succeed
+    return uv;
 }
 
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
