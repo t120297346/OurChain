@@ -19,6 +19,8 @@
 docker build -t our-chain .
 # 從 image 生成 container 且啟動
 docker run --name our-chain -it our-chain
+# 開發外部應用(導出端口)
+docker run --name our-chain -it -p 8332:8332 our-chain
 ```
 
 設置環境變數與啟動測試

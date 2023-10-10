@@ -22,7 +22,7 @@ RUN apt-get install gdb -y
 
 EXPOSE 22
 EXPOSE 2500
-
+EXPOSE 8332
 
 # make
 RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && make -j8 && make install && ldconfig && mkdir ~/.bitcoin/
