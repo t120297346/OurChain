@@ -10,6 +10,14 @@
 
 參考 https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers 安裝 vscode container 插件
 
+## 合約試編譯
+
+```sh
+g++ -fPIC -g -c -Wall -o "./aid.o" "./aid.cpp"
+g++ -shared -Wl,-soname,"aid.so" -o "./aid.so" "./aid.o"
+rm -f "./aid.o"
+```
+
 ## 第一次執行
 
 在本專案根目錄執行
