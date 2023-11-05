@@ -21,7 +21,6 @@ RUN apt-get install vim -y
 RUN apt-get install gdb -y
 
 EXPOSE 22
-EXPOSE 2500
 EXPOSE 8332
 
 # make
