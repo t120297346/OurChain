@@ -289,7 +289,7 @@ UniValue verifytxoutproof(const JSONRPCRequest& request)
 
 UniValue createrawtransaction(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 4)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 5)
         throw std::runtime_error(
             "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,\"data\":\"hex\",...} ( locktime ) ( replaceable )\n"
             "\nCreate a transaction spending the given inputs and creating new outputs.\n"
@@ -314,8 +314,15 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data\n"
             "      ,...\n"
             "    }\n"
-            "3. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
-            "4. replaceable               (boolean, optional, default=false) Marks this transaction as BIP125 replaceable.\n"
+            "3. \"contract\"              (object, optional) a json object with contract\n"
+            "    {\n"
+            "      \"action\": x.xxx,     (numeric or string, required) The key is the contract action, the numeric value (can be string) is the action type\n"
+            "      \"code\": \"src code\"       (string, required) The key is \"code\", the value is cpp source code of contract can be split line by '\\n'\n"
+            "      \"address\": \"hex\"    (string, required) The key is \"address\", the value is address with uint256 for contract\n"
+            "      \"args\": [\"hex\", ...] (array of string, required) The key is \"args\", the value is args of contract execution\n"
+            "    }\n"
+            "4. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
+            "5. replaceable               (boolean, optional, default=false) Marks this transaction as BIP125 replaceable.\n"
             "                             Allows this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible.\n"
             "\nResult:\n"
             "\"transaction\"              (string) hex string of the transaction\n"
@@ -327,7 +334,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             + HelpExampleRpc("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"data\\\":\\\"00010203\\\"}\"")
         );
 
-    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VOBJ, UniValue::VNUM}, true);
+    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VOBJ, UniValue::VOBJ, UniValue::VNUM}, true);
     if (request.params[0].isNull() || request.params[1].isNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, arguments 1 and 2 must be non-null");
 
@@ -336,14 +343,14 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
 
     CMutableTransaction rawTx;
 
-    if (request.params.size() > 2 && !request.params[2].isNull()) {
-        int64_t nLockTime = request.params[2].get_int64();
+    if (request.params.size() > 3 && !request.params[3].isNull()) {
+        int64_t nLockTime = request.params[3].get_int64();
         if (nLockTime < 0 || nLockTime > std::numeric_limits<uint32_t>::max())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, locktime out of range");
         rawTx.nLockTime = nLockTime;
     }
 
-    bool rbfOptIn = request.params.size() > 3 ? request.params[3].isTrue() : false;
+    bool rbfOptIn = request.params.size() > 4 ? request.params[4].isTrue() : false;
 
     for (unsigned int idx = 0; idx < inputs.size(); idx++) {
         const UniValue& input = inputs[idx];
@@ -409,11 +416,30 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         }
     }
 
-    if (!request.params[3].isNull() && rbfOptIn != SignalsOptInRBF(rawTx)) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter combination: Sequence number(s) contradict replaceable option");
+    // handle contract
+    if (!request.params[2].isNull()){
+        UniValue contractParameter = request.params[2].get_obj();
+        rawTx.contract.action = contractParameter["action"].get_int();
+        rawTx.contract.code = contractParameter["code"].get_str();
+        for (unsigned i = 0; i < contractParameter["args"].size(); i++)
+            rawTx.contract.args.push_back(contractParameter["args"][i].get_str());
+        if (rawTx.contract.action == contract_action::ACTION_NEW)
+            rawTx.contract.address = rawTx.GetHash();
+        else if (rawTx.contract.action == contract_action::ACTION_CALL)
+            rawTx.contract.address.SetHex(contractParameter["address"].get_str());
+        else if (rawTx.contract.action == contract_action::ACTION_NONE)
+            rawTx.contract.address = uint256();
+        else
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, contract action is out of range");
     }
 
-    return EncodeHexTx(rawTx);
+    if (!request.params[4].isNull() && rbfOptIn != SignalsOptInRBF(rawTx)) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter combination: Sequence number(s) contradict replaceable option");
+    }
+    UniValue result(UniValue::VOBJ);
+    result.push_back(Pair("hex", EncodeHexTx(rawTx)));
+    result.push_back(Pair("contractAddress", rawTx.contract.address.GetHex()));
+    return result;
 }
 
 UniValue decoderawtransaction(const JSONRPCRequest& request)
