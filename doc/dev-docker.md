@@ -71,7 +71,8 @@ docker start [CONTAINER ID]
 
 ## 發布 container
 
-在 dockerfile 中加入 `ENTRYPOINT ["bitcoind", "--regtest"]`
+1. 在 dockerfile 中加入 `ENTRYPOINT ["bitcoind", "--regtest"]`
+2. 利用 `docker build -t our-chain .` 創建 image
 
 ## 檔案編輯與執行
 
