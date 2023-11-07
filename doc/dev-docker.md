@@ -69,6 +69,10 @@ docker container ls -a
 docker start [CONTAINER ID]
 ```
 
+## 發布 container
+
+在 dockerfile 中加入 `ENTRYPOINT ["bitcoind", "--regtest"]`
+
 ## 檔案編輯與執行
 
 ### 編輯

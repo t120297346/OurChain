@@ -28,3 +28,7 @@ RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desk
 
 # set config
 RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=0.0.0.0/0\nregtest=1" >> /root/.bitcoin/bitcoin.conf
+
+# set entrypoint
+WORKDIR /root/Desktop/ourchain
+# ENTRYPOINT ["bitcoind", "--regtest"]
