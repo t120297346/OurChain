@@ -1,5 +1,5 @@
 make -j8 && make install && ldconfig
-./src/bitcoind --regtest --daemon
+./src/bitcoind --regtest --daemon -txindex
 sleep 5
 ./src/bitcoin-cli generate 101
 sleep 5

@@ -34,8 +34,8 @@ docker run --name our-chain -it -p 8332:8332 our-chain
 設置環境變數與啟動測試
 
 ```bash
-# 啟動 (BUG:會遇到吃不到代碼更新, 所以直接執行 local)
-./src/bitcoind --regtest --daemon
+# 啟動 (BUG:會遇到吃不到代碼更新, 所以直接執行 local) 
+./src/bitcoind --regtest --daemon -txindex
 # 停止
 ./src/bitcoin-cli stop
 # 教學
@@ -50,6 +50,13 @@ docker run --name our-chain -it -p 8332:8332 our-chain
 ./src/bitcoin-cli callcontract "contract address when deploy" "arg1" "arg2" ...
 # 獲取合約狀態(此為 pure 操作)
 ./src/bitcoin-cli dumpcontractmessage "contract address" ""
+```
+
+若因為 index 問題無法啟動（可以重啟 index 但 scanner API 就不能用了）
+```
+# [0%]...ERROR: ReadBlockFromDisk: Deserialize or I/O error - ReadCompactSize(): size too large: iostream error at CBlockDiskPos(nFile=0, nPos=161438)
+# Please restart with -reindex or -reindex-chainstate to recover.
+./src/bitcoind --regtest --daemon -reindex
 ```
 
 can use `bash ./mytest.sh` run contract commands
@@ -71,7 +78,7 @@ docker start [CONTAINER ID]
 
 ## 發布 container
 
-1. 在 dockerfile 中加入 `ENTRYPOINT ["bitcoind", "--regtest"]`
+1. 在 dockerfile 中加入 `ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]`
 2. 利用 `docker build -t our-chain .` 創建 image
 
 ## 檔案編輯與執行

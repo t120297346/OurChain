@@ -31,4 +31,4 @@ RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=
 
 # set entrypoint
 WORKDIR /root/Desktop/ourchain
-# ENTRYPOINT ["bitcoind", "--regtest"]
+# ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]
