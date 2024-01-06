@@ -39,27 +39,10 @@ int call_contract(const char* contract, int argc, char** argv);
 /* print to runtime error log */
 int err_printf(const char* format, ...);
 
-// /* wrapper around snprintf */
-// int str_printf(char* str, unsigned size, const char* format, ...);
-
-// /* print to contract output */
-// int out_printf(const char* format, ...);
-
-// /* clear contract output */
-// int out_clear(void);
-
 /* read the state file of the calling contract */
 std::string* state_read();
 
 /* write the state file of the calling contract */
 int state_write(const std::string* buf);
-
-// /* send some money to the target address */
-// int send_money(const char* addr, CAmount amount);
-
-// /* send some money to the target contract */
-// int send_money_to_contract(const char* addr, CAmount amount);
-
-// CAmount amount_from_string(const char* val);
 
 #endif // BITCOIN_CONTRACT_OURCONTRACT_H

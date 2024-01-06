@@ -179,47 +179,6 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
         } else {
             break;
         }
-        // else if (flag == BYTE_SEND_TO_ADDRESS) {        // send to address
-        //     char addr_to[40];
-        //     CAmount amount;
-        //     int ret = fread((void *) addr_to, sizeof(char), 40, pipe_state_read);
-        //     assert(ret >= 0);
-        //     ret = fread((void *) &amount, sizeof(long long), 1, pipe_state_read);
-        //     assert(ret >= 0);
-        //     CBitcoinAddress address(addr_to);
-        //     vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address.Get())));
-        // } else if (flag == BYTE_SEND_TO_CONTRACT) {        // send to contract
-        //     char addr_to[64];
-        //     CAmount amount;
-        //     int ret = fread((void *) addr_to, sizeof(char), 64, pipe_state_read);
-        //     assert(ret >= 0);
-        //     ret = fread((void *) &amount, sizeof(long long), 1, pipe_state_read);
-        //     assert(ret >= 0);
-        //     uint256 address = uint256S(addr_to);
-        //     vTxOut.push_back(CTxOut(amount, GetScriptForDestination(address)));
-        // } else if (flag == BYTE_CALL_CONTRACT) {
-        //     Contract contract;
-        //     contract.action = ACTION_CALL;
-        //     char contractName[65] = {0};
-        //     int ret = fread((void *) contractName, sizeof(char), 64, pipe_state_read);
-        //     assert(ret >= 0);
-        //     contract.address = uint256S(contractName);
-        //     int argc;
-        //     ret = fread((void *) &argc, sizeof(int), 1, pipe_state_read);
-        //     assert(ret >= 0);
-        //     for (int i = 0; i < argc; i++) {
-        //         int argLen;
-        //         ret = fread((void *) &argLen, sizeof(int), 1, pipe_state_read);
-        //         assert(ret >= 0);
-        //         char *argName = new char[argLen + 1]();
-        //         ret = fread((void *) argName, sizeof(char), argLen, pipe_state_read);
-        //         assert(ret >= 0);
-        //         contract.args.push_back(std::string(argName));
-        //     }
-        //     nextContract.push_back(contract);
-        // } else {
-        //     puts("Error: pipe");
-        // }
     }
     fclose(pipe_state_read);
     fclose(pipe_state_write);
