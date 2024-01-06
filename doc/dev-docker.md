@@ -18,6 +18,10 @@ g++ -shared -Wl,-soname,"aid.so" -o "./aid.so" "./aid.o"
 rm -f "./aid.o"
 ```
 
+## 合約 runtime 概念設計圖
+
+![ourcontract.png](./ourcontract.png)
+
 ## 第一次執行
 
 在本專案根目錄執行
