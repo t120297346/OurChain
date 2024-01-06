@@ -282,14 +282,6 @@ bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std:
             return false;
         }
     }
-    CAmount amount = 0;
-    for (CTxOut& out : vTxOut) {
-        amount = amount + out.nValue;
-    }
-    if (amount > balance) {
-        /* TODO: perform state recovery */
-        return false;
-    }
 
     return true;
 }
