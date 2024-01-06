@@ -100,19 +100,44 @@ std::string* physical_state_read()
 
 int physical_state_write(const std::string* buf)
 {
-    size_t buf_size =  sizeof(char) * (buf->length() + 1);
-    int ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
+    int flag = 1;
+    int ret = fwrite((void*)&flag, sizeof(int), 1, out);
     if(ret <= 0){
         err_printf("state_write: write control code error\n");
+        return -1;
+    }
+    size_t buf_size =  sizeof(char) * (buf->length() + 1);
+    ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
+    if(ret <= 0){
+        err_printf("state_write: write size error\n");
         return -1;
     }
     ret = fwrite((void*)buf->c_str(), buf_size, 1, out);
     if(ret <= 0){
-        err_printf("state_write: write control code error\n");
+        err_printf("state_write: write buffer error\n");
         return -1;
     }
     fflush(out);
     return ret;
+}
+
+bool check_runtime_can_write_db()
+{
+    int flag = 2;
+    fwrite((void*)&flag, sizeof(int), 1, out);
+    fflush(out);
+    int ret = fread((void*)&flag, sizeof(int), 1, in);
+    if(ret <= 0){
+        err_printf("check_runtime_can_write_db: read mode code error\n");
+        return false;
+    }
+    if(flag == 1){
+        return true; // only 1 can write state to db
+    }else if(flag == 0){
+        return false;
+    }
+    err_printf("check_runtime_can_write_db: read mode code error\n");
+    return false;
 }
 
 int start_runtime(int argc, char** argv)
@@ -162,7 +187,7 @@ int call_contract(const char* contract, int argc, char** argv)
         // clear state
         delete call_stack.top();
         call_stack.pop();
-        // do something with buf
+        // write state to DB or pure output
         auto ret = physical_state_write(buf);
         if (ret < 0) {
             err_printf("call_contract physical_state_write error: %s\n", dlerror());
@@ -175,7 +200,7 @@ int call_contract(const char* contract, int argc, char** argv)
         // clear state
         delete call_stack.top();
         call_stack.pop();
-        // do something with buf
+        // write state to parent contract
         call_stack.top()->setPreState(json::parse(*buf));
         delete buf;
     }

@@ -10,7 +10,17 @@
 using json = nlohmann::json;
 
 extern "C" int contract_main(int argc, char **argv) {
-  // try state
+  // pure mode
+  if (!check_runtime_can_write_db()) {
+    std::cerr << "runtime is pure mode" << std::endl;
+    json j = state_read();
+    std::cerr << "get state: " << j.dump() << std::endl;
+    // some operation
+    j.push_back("pure click: " + std::to_string((size_t)j.size()));
+    state_write(j);
+    return 0;
+  }
+  // call contract state
   if (state_exist()) {
     json j = state_read();
     std::cerr << "get state: " << j.dump() << std::endl;

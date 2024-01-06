@@ -51,6 +51,9 @@ void state_write(json buf);
 /* check if state exist*/
 bool state_exist();
 
+/* check if runtime can write db*/
+bool check_runtime_can_write_db();
+
 /* read pre state*/
 json pre_state_read();
 

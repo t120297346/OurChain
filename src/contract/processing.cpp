@@ -108,19 +108,26 @@ static void read_state_from_db(ContractDBWrapper &cdb, std::string &hex_ctid, in
     }
 }
 
-static void write_state_to_db(ContractDBWrapper &cdb, std::string &hex_ctid, int &flag, FILE* pipe_state_read){
+static int read_buffer_size(FILE* pipe_state_read){
+    int size;
+    int ret = fread((void*)&size, sizeof(int), 1, pipe_state_read);
+    assert(ret >= 0);
+    return size;
+}
+
+static void write_state_to_db(ContractDBWrapper &cdb, std::string &hex_ctid, int &size, FILE* pipe_state_read){
     // LogPrintf("message recieve write %d\n", flag);
     // state.resize(flag);
-    char* tmp = (char*)malloc(flag);
-    int ret = fread(tmp, 1, flag, pipe_state_read);
-    cdb.setState(hex_ctid.c_str(), tmp, flag);
+    char* tmp = (char*)malloc(size);
+    int ret = fread(tmp, 1, size, pipe_state_read);
+    cdb.setState(hex_ctid.c_str(), tmp, size);
     assert(ret >= 0);
     free(tmp);
 }
 
-static std::string write_state_as_string(ContractDBWrapper &cdb, std::string &hex_ctid, int &flag, FILE* pipe_state_read){
-    char* tmp = (char*)malloc(flag);
-    int ret = fread(tmp, 1, flag, pipe_state_read);
+static std::string write_state_as_string(ContractDBWrapper &cdb, std::string &hex_ctid, int &size, FILE* pipe_state_read){
+    char* tmp = (char*)malloc(size);
+    int ret = fread(tmp, 1, size, pipe_state_read);
     assert(ret >= 0);
     return std::string(tmp);
 }
@@ -174,8 +181,13 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == 0) { // read state
             read_state_from_db(cdb, hex_ctid, flag, pipe_state_write);
-        } else if (flag > 0) { // write state
-            write_state_to_db(cdb, hex_ctid, flag, pipe_state_read);
+        } else if (flag == 1) { // write state
+            int size = read_buffer_size(pipe_state_read);
+            write_state_to_db(cdb, hex_ctid, size, pipe_state_read);
+        } else if(flag == 2) { // check mode (pure = 0, not pure = 1)
+            flag = 1;
+            fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
+            fflush(pipe_state_write);
         } else {
             break;
         }
@@ -214,8 +226,13 @@ std::string call_rt_pure(const uint256& contract, const std::vector<std::string>
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == 0) { // read state
             read_state_from_db(cdb, hex_ctid, flag, pipe_state_write);
-        } else if (flag > 0) { // write state
-            result = write_state_as_string(cdb, hex_ctid, flag, pipe_state_read);
+        } else if (flag == 1) { // write state
+            int size = read_buffer_size(pipe_state_read);
+            result = write_state_as_string(cdb, hex_ctid, size, pipe_state_read);
+        } else if(flag == 2) { // check mode (pure = 0, not pure = 1)
+            flag = 0;
+            fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
+            fflush(pipe_state_write);
         } else {
             break;
         }
