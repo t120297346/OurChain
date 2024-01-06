@@ -10,7 +10,13 @@
 using json = nlohmann::json;
 
 extern "C" int contract_main(int argc, char **argv) {
-  auto targetContractAddess = "65de9877d5f1fe7f48c0e43b95c67a1e88a4a6357d5076b972b0f1e0c35f3192";
+  if(check_runtime_can_write_db() == true){
+    std::cerr << "runtime can write db" << std::endl;
+    return 0;
+  }
+  // std::cerr << argv[0] << std::endl; // contract address itself
+  // std::cerr << argv[1] << std::endl; // first argument is target contract address
+  auto targetContractAddess = argv[1];
   auto ret = call_contract(targetContractAddess,argc,argv);
   if (ret == 0) {
     std::cerr << "call contract success" << std::endl;
@@ -18,7 +24,7 @@ extern "C" int contract_main(int argc, char **argv) {
     std::cerr << "call contract error" << std::endl;
   }
   json j = pre_state_read();
-  j.push_back("contract can call other contract");
+  j.push_back("contract can call other contract 2");
   state_write(j);
   return 0;
 }

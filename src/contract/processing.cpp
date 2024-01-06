@@ -125,6 +125,16 @@ static void write_state_to_db(ContractDBWrapper &cdb, std::string &hex_ctid, int
     free(tmp);
 }
 
+static std::string read_contract_address(FILE* pipe_state_read){
+    int size = sizeof(char) * 64;
+    char* tmp = (char*)malloc(size);
+    int ret = fread(tmp, 1, size, pipe_state_read);
+    assert(ret >= 0);
+    std::string address(tmp, 64);
+    free(tmp);
+    return address;
+}
+
 static std::string write_state_as_string(ContractDBWrapper &cdb, std::string &hex_ctid, int &size, FILE* pipe_state_read){
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
@@ -180,7 +190,8 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     int flag;
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == 0) { // read state
-            read_state_from_db(cdb, hex_ctid, flag, pipe_state_write);
+            auto targetAddress = read_contract_address(pipe_state_read);
+            read_state_from_db(cdb, targetAddress, flag, pipe_state_write);
         } else if (flag == 1) { // write state
             int size = read_buffer_size(pipe_state_read);
             write_state_to_db(cdb, hex_ctid, size, pipe_state_read);
@@ -225,7 +236,8 @@ std::string call_rt_pure(const uint256& contract, const std::vector<std::string>
     std::string result = "";
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == 0) { // read state
-            read_state_from_db(cdb, hex_ctid, flag, pipe_state_write);
+            auto targetAddress = read_contract_address(pipe_state_read);
+            read_state_from_db(cdb, targetAddress, flag, pipe_state_write);
         } else if (flag == 1) { // write state
             int size = read_buffer_size(pipe_state_read);
             result = write_state_as_string(cdb, hex_ctid, size, pipe_state_read);

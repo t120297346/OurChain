@@ -74,10 +74,12 @@ static inline const char* get_contracts_dir()
     return runtime_argv[1];
 }
 
-std::string* physical_state_read()
+std::string* physical_state_read(const char* contractAddress)
 {
     int flag = 0;
     fwrite((void*)&flag, sizeof(int), 1, out);
+    fflush(out);
+    fwrite((void*)contractAddress, sizeof(char) * 64, 1, out);
     fflush(out);
     int ret = fread((void*)&flag, sizeof(int), 1, in);
     if(ret <= 0){
@@ -123,6 +125,10 @@ int physical_state_write(const std::string* buf)
 
 bool check_runtime_can_write_db()
 {
+    if(call_stack.size() > 1){
+        // only base contract can write state to db
+        return false;
+    }
     int flag = 2;
     fwrite((void*)&flag, sizeof(int), 1, out);
     fflush(out);
@@ -179,7 +185,7 @@ int call_contract(const char* contract, int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    call_stack.push(new ContractLocalState(physical_state_read()));
+    call_stack.push(new ContractLocalState(physical_state_read(contract)));
     int ret = contract_main(argc, argv);
     if(call_stack.size() == 1){
         // base contract can write state to DB or pure output
