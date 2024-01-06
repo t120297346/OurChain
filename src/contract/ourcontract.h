@@ -9,6 +9,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string>
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 /** Amount in satoshis (Can be negative) */
 typedef int64_t CAmount;
@@ -40,9 +43,31 @@ int call_contract(const char* contract, int argc, char** argv);
 int err_printf(const char* format, ...);
 
 /* read the state file of the calling contract */
-std::string* state_read();
+json state_read();
 
 /* write the state file of the calling contract */
-int state_write(const std::string* buf);
+void state_write(json buf);
+
+/* check if state exist*/
+bool state_exist();
+
+/* read pre state*/
+json pre_state_read();
+
+class ContractLocalState
+{
+private:
+    std::string* stateStr;
+    json state;
+    json preState;
+public:
+    ContractLocalState(std::string *stateStr);
+    ~ContractLocalState();
+    void setState(json state);
+    void setPreState(json preState);
+    json getPreState();
+    json getState();
+    bool isStateNull();
+};
 
 #endif // BITCOIN_CONTRACT_OURCONTRACT_H

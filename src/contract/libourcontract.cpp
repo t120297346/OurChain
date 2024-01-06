@@ -10,12 +10,58 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stack>
 // #include <boost/uuid/uuid.hpp>
 // #include <boost/uuid/uuid_generators.hpp>
 
 #include "ourcontract.h"
 
 /* call stack */
+ContractLocalState::ContractLocalState(std::string *stateStr)
+{
+    if(stateStr == nullptr){
+        this->state = json();
+        return;
+    }
+    this->stateStr = stateStr;
+    this->state = json::parse(*stateStr);
+}
+
+ContractLocalState::~ContractLocalState()
+{
+    if(this->stateStr != nullptr){
+        delete this->stateStr;
+    }
+}
+
+json ContractLocalState::getState()
+{
+    return this->state;
+}
+
+void ContractLocalState::setState(json state)
+{
+    this->state = state;
+}
+
+bool ContractLocalState::isStateNull()
+{
+    return this->state.is_null();
+}
+
+void ContractLocalState::setPreState(json preState)
+{
+    this->preState = preState;
+}
+
+json ContractLocalState::getPreState()
+{
+    return this->preState;
+}
+
+thread_local std::stack<ContractLocalState*> call_stack;
+
+/* runtime state pipe*/
 FILE* in;
 FILE* out;
 
@@ -26,6 +72,47 @@ static char** runtime_argv = NULL;
 static inline const char* get_contracts_dir()
 {
     return runtime_argv[1];
+}
+
+std::string* physical_state_read()
+{
+    int flag = 0;
+    fwrite((void*)&flag, sizeof(int), 1, out);
+    fflush(out);
+    int ret = fread((void*)&flag, sizeof(int), 1, in);
+    if(ret <= 0){
+        err_printf("state_read: read control code error\n");
+        return nullptr;
+    }
+    if(flag == 0){
+        return nullptr;
+    }
+    char* buf = new char[flag]();
+    size_t buf_size =  sizeof(char) * flag;
+    ret = fread((void*)buf, buf_size, 1, in);
+    if(ret <= 0){
+        err_printf("state_read: read data error\n");
+        return nullptr;
+    }
+    std::string* str = new std::string(buf);
+    return str;
+}
+
+int physical_state_write(const std::string* buf)
+{
+    size_t buf_size =  sizeof(char) * (buf->length() + 1);
+    int ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
+    if(ret <= 0){
+        err_printf("state_write: write control code error\n");
+        return -1;
+    }
+    ret = fwrite((void*)buf->c_str(), buf_size, 1, out);
+    if(ret <= 0){
+        err_printf("state_write: write control code error\n");
+        return -1;
+    }
+    fflush(out);
+    return ret;
 }
 
 int start_runtime(int argc, char** argv)
@@ -67,7 +154,32 @@ int call_contract(const char* contract, int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    call_stack.push(new ContractLocalState(physical_state_read()));
     int ret = contract_main(argc, argv);
+    if(call_stack.size() == 1){
+        // base contract can write state to DB or pure output
+        std::string* buf = new std::string(call_stack.top()->getState().dump());
+        // clear state
+        delete call_stack.top();
+        call_stack.pop();
+        // do something with buf
+        auto ret = physical_state_write(buf);
+        if (ret < 0) {
+            err_printf("call_contract physical_state_write error: %s\n", dlerror());
+            return EXIT_FAILURE;
+        }
+        delete buf;
+    }else {
+        // nested contract can only write state to parent contract
+        std::string* buf = new std::string(call_stack.top()->getState().dump());
+        // clear state
+        delete call_stack.top();
+        call_stack.pop();
+        // do something with buf
+        call_stack.top()->setPreState(json::parse(*buf));
+        delete buf;
+    }
+    
 
     dlclose(handle);
     return ret;
@@ -85,43 +197,22 @@ int err_printf(const char* format, ...)
     return ret;
 }
 
-std::string* state_read()
+json state_read()
 {
-    int flag = 0;
-    fwrite((void*)&flag, sizeof(int), 1, out);
-    fflush(out);
-    int ret = fread((void*)&flag, sizeof(int), 1, in);
-    if(ret <= 0){
-        err_printf("state_read: read control code error\n");
-        return nullptr;
-    }
-    if(flag == 0){
-        return nullptr;
-    }
-    char* buf = new char[flag]();
-    size_t buf_size =  sizeof(char) * flag;
-    ret = fread((void*)buf, buf_size, 1, in);
-    if(ret <= 0){
-        err_printf("state_read: read data error\n");
-        return nullptr;
-    }
-    std::string* str = new std::string(buf);
-    return str;
+    return call_stack.top()->getState();
 }
 
-int state_write(const std::string* buf)
+void state_write(json buf)
 {
-    size_t buf_size =  sizeof(char) * (buf->length() + 1);
-    int ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
-    if(ret <= 0){
-        err_printf("state_write: write control code error\n");
-        return -1;
-    }
-    ret = fwrite((void*)buf->c_str(), buf_size, 1, out);
-    if(ret <= 0){
-        err_printf("state_write: write control code error\n");
-        return -1;
-    }
-    fflush(out);
-    return ret;
+    call_stack.top()->setState(buf);
+}
+
+bool state_exist()
+{
+    return !call_stack.top()->isStateNull();
+}
+
+json pre_state_read()
+{
+    return call_stack.top()->getPreState();
 }
