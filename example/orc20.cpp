@@ -43,86 +43,65 @@ enum Command {
 };
 
 static std::unordered_map<std::string,Command> const string2Command = { {"totalSupply",Command::totalSupply}, {"balanceOf",Command::balanceOf}, {"transfer",Command::transfer}, {"allowance",Command::allowance}, {"approve",Command::approve}, {"transferFrom",Command::transferFrom} };
+static std::string aidContractAddress = "f40ee8930eb5c30211e3691f37576c259121d673c1b55bc97e81ec518048c6da";
 
-struct Token {
-    unsigned int id;
-    std::string name;
-    std::string description;
-    std::string data;
-    // private
-    std::string owner;
-    std::vector<std::string> approved;
+char* getDynamicString(const char* str){
+    char* ret = (char*)malloc(sizeof(char) * strlen(str));
+    strcpy(ret, str);
+    return ret;
+}
 
-    // function
-    std::string Serializer() {
-        json j;
-        j["id"] = id;
-        j["name"] = name;
-        j["description"] = description;
-        j["data"] = data;
-        j["owner"] = owner;
-        j["approved"] = approved;
-        return j.dump();
+void removeDynamicStrings(char** argv){
+    for(int i=0;i<4;i++){
+        delete[] argv[i];
     }
-};
+    delete[] argv;
+}
 
-class Repository {
-    public:
-        Repository() {
-            std::string* buf = state_read();
-            if (buf != nullptr) {
-                std::cerr << "get state: " << buf->c_str() << std::endl;
-                // some operation
-                json j = j.parse(*buf);
-                for (auto& element : j) {
-                    Token token;
-                    token.id = element["id"];
-                    token.name = element["name"];
-                    token.description = element["description"];
-                    token.data = element["data"];
-                    tokens.push_back(token);
-                }
-                // release resource
-                delete buf;
-            }
-        }
-        unsigned int length() {
-            return tokens.size();
-        }
-        void addToken(Token token) {
-            tokens.push_back(token);
-        }
-        Token getToken(unsigned int id) {
-            for (auto& token : tokens) {
-                if (token.id == id) {
-                    return token;
-                }
-            }
-            Token token;
-            return token;
-        }
-        std::vector<Token> getTokens(unsigned int index) {
-            std::vector<Token> result;
-            for (auto& token : tokens) {
-                if (token.id >= index) {
-                    result.push_back(token);
-                }
-            }
-        }
-        void updateToken(Token token) {
-            for (auto& t : tokens) {
-                if (t.id == token.id) {
-                    t = token;
-                    return;
-                }
-            }
-        }
-    private:
-        std::vector<Token> tokens;
-};
+bool verifyUser(std::string aid, std::string password){
+    // check if aid is valid
+    char **subArgv = (char **)malloc(sizeof(char *) * 4);
+    // put aidContractAddress into argv[0]
+    subArgv[0] = getDynamicString(aidContractAddress.c_str());
+    subArgv[1] = getDynamicString("verify");
+    subArgv[2] = getDynamicString(aid.c_str());
+    subArgv[3] = getDynamicString(password.c_str());
+    int ret = call_contract(aidContractAddress.c_str(), 4, subArgv);
+    removeDynamicStrings(subArgv);
+    if(ret != 0){
+        err_printf("aid contract exe error\n");
+        return false;
+    }
+    json verifyResponse = pre_state_read();
+    if(!verifyResponse["isExist"].get<bool>()){
+        err_printf("aid not exist\n");
+        return false;
+    }
+    if(!verifyResponse["result"].get<bool>()){
+        err_printf("aid password error\n");
+        return false;
+    }
+    return true;
+}
 
 extern "C" int contract_main(int argc, char **argv) {
-  Repository repository;
+  // init state
+  if(!state_exist()){
+    json j = json::array();
+    std::string coinName = argv[1];
+    int count = atoi(argv[2]);
+    std::string aid = argv[3];
+    for(int i=0;i<count;i++){
+        json tmp;
+        tmp["coinName"] = coinName;
+        tmp["id"] = i;
+        tmp["owner"] = aid;
+        j.push_back(tmp);
+    }
+    state_write(j);
+    return 0;
+  }
+  // execute command
   if (argc == 1) {
       std::cerr << "argc error" << std::endl;
       return 0;
@@ -136,22 +115,81 @@ extern "C" int contract_main(int argc, char **argv) {
   switch (eCommand->second)
   {
   case Command::totalSupply:
-    /* code */
+    if(check_runtime_can_write_db()){
+        return 0;
+    }
+    state_write(state_read());
     break;
   case Command::balanceOf:
-    /* code */
+    if(check_runtime_can_write_db()){
+        return 0;
+    }
+    {
+        std::string aid = argv[2];
+        json j = state_read();
+        json ownList = json::array();
+        for (auto &it : j) {
+            if (it["owner"] == aid) {
+                ownList.push_back(it);
+            }
+        }
+        state_write(ownList);
+    }
     break;
   case Command::transfer:
-    /* code */
+    if(!check_runtime_can_write_db()){
+      return 0;
+    }
+    {
+        // get argv
+        std::string aid = argv[2];
+        std::string targetAid = argv[3];
+        int count = atoi(argv[4]);
+        std::string password = argv[5];
+        // check if aid is valid
+        if(!verifyUser(aid, password)){
+            return 0;
+        }
+        // start execute transfer
+        json j = state_read();
+        json ownList = json::array();
+        for (auto &it : j) {
+            if (it["owner"] == aid) {
+                ownList.push_back(it);
+            }
+        }
+        if (static_cast<int>(ownList.size()) < count) {
+            err_printf("not enough token\n");
+            return 0;
+        }
+        for(int i=0;i<count;i++){
+            for(auto &it : j){
+                if(it["owner"] == aid){
+                    it["owner"] = targetAid;
+                    break;
+                }
+            }
+        }
+        state_write(j);
+    }
     break;
   case Command::allowance:
-    /* code */
+    if(!check_runtime_can_write_db()){
+      return 0;
+    }
+    err_printf("allowance not implemented\n");
     break;
   case Command::approve:
-    /* code */
+    if(!check_runtime_can_write_db()){
+      return 0;
+    }
+    err_printf("approve not implemented\n");
     break;
   case Command::transferFrom:
-    /* code */
+    if(!check_runtime_can_write_db()){
+      return 0;
+    }
+    err_printf("transferFrom not implemented\n");
     break;
   default:
     break;
