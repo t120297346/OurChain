@@ -247,3 +247,21 @@ json pre_state_read()
 {
     return call_stack.top()->getPreState();
 }
+
+std::string get_pre_txid()
+{
+    int flag = 3;
+    fwrite((void*)&flag, sizeof(int), 1, out);
+    fflush(out);
+    char buf[65];
+    int ret = fread((void*)&buf, sizeof(char)*64, 1, in);
+    if(ret <= 0){
+        err_printf("check_pre_txid: read error\n");
+        return "";
+    }
+    if(buf[0] == 0){
+        err_printf("check_pre_txid: pre txid not exist in pure runtime\n");
+        return "";
+    }
+    return std::string(buf, 64);
+}

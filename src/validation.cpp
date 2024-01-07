@@ -1135,7 +1135,7 @@ void static InvalidBlockFound(CBlockIndex* pindex, const CValidationState& state
     }
 }
 
-CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs, std::vector<Contract>& nextContract)
+CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs, std::vector<Contract>& nextContract, const CTransaction &curTx)
 {
     if (cont.action == 0) return CTransactionRef();
     CMutableTransaction mtx;
@@ -1147,7 +1147,7 @@ CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs,
         balance += inputs.AccessCoin(outpoint).out.nValue;
     }
 
-    if (!ProcessContract(cont, mtx.vout, cs.state, balance, nextContract)) return CTransactionRef();
+    if (!ProcessContract(cont, mtx.vout, cs.state, balance, nextContract, curTx)) return CTransactionRef();
     // update cont state
     cs.coins.clear();
     inputs.AddContState(cont.address, std::move(cs));
@@ -1794,7 +1794,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
             contractQueue.pop();
 
             std::vector<Contract> contractCall;
-            CTransactionRef ptx = ProcessContractTx(cur, view, contractCall);
+            CTransactionRef ptx = ProcessContractTx(cur, view, contractCall, tx);
             if (ptx) {
                 block.vvtx.push_back(ptx);
                 blockundo.vtxundo.push_back(CTxUndo());

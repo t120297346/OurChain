@@ -15,6 +15,7 @@ extern "C" int contract_main(int argc, char **argv) {
     std::cerr << "runtime is pure mode" << std::endl;
     json j = state_read();
     std::cerr << "get state: " << j.dump() << std::endl;
+    std::cerr << "pre txid: " << get_pre_txid() << std::endl;
     // some operation
     j.push_back("pure click: " + std::to_string((size_t)j.size()));
     state_write(j);
@@ -24,6 +25,7 @@ extern "C" int contract_main(int argc, char **argv) {
   if (state_exist()) {
     json j = state_read();
     std::cerr << "get state: " << j.dump() << std::endl;
+    std::cerr << "pre txid: " << get_pre_txid() << std::endl;
     // some operation
     j.push_back("more click: " + std::to_string((size_t)j.size()));
     state_write(j);
@@ -31,6 +33,7 @@ extern "C" int contract_main(int argc, char **argv) {
   }
   // init state
   std::cerr << "read state error" << std::endl;
+  std::cerr << "pre txid: " << get_pre_txid() << std::endl;
   json j;
   j.push_back("baby cute");
   j.push_back(1);

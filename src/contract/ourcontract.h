@@ -37,6 +37,9 @@ bool check_runtime_can_write_db();
 /* read pre state*/
 json pre_state_read();
 
+/* check pre txid for verify sign*/
+std::string get_pre_txid();
+
 class ContractLocalState
 {
 private:
