@@ -62,7 +62,7 @@ static void exec_dll(const uint256& contract, const std::vector<std::string>& ar
 
 static void read_state_from_db(ContractDBWrapper &cdb, std::string &hex_ctid, int &flag, FILE* pipe_state_write){
     std::string newbuffer = cdb.getState(hex_ctid.c_str());
-    if (cdb.mystatus.ok()) {
+    if (cdb.getStatus().ok()) {
         flag = newbuffer.size();
         fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
         fflush(pipe_state_write);
