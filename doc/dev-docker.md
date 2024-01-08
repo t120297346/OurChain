@@ -20,7 +20,7 @@ rm -f "./aid.o"
 
 ## 合約 runtime 概念設計圖
 
-![image](https://github.com/leon123858/OurChain/assets/56253942/900af56a-709d-41b9-b368-09d7b11bd327)
+![image](https://github.com/leon123858/OurChain/assets/56253942/f29f5eef-297a-4574-8275-cc3c1ae455ef)
 
 
 ## 第一次執行
