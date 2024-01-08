@@ -34,39 +34,6 @@ const static fs::path& GetContractsDir()
     return contracts_dir;
 }
 
-ContractDBWrapper::ContractDBWrapper()
-{
-    options.create_if_missing = true;
-    fs::path path = GetDataDir() / "contracts" / "index";
-    TryCreateDirectories(path);
-    leveldb::Status status = leveldb::DB::Open(options, path.string(), &db);
-    if (status.ok()) {
-        LogPrintf("Opening ContractLevelDB in %s\n", path.string());
-    }
-};
-
-ContractDBWrapper::~ContractDBWrapper()
-{
-    delete db;
-    db = nullptr;
-};
-
-void ContractDBWrapper::setState(std::string key, void* buf, size_t size)
-{
-    leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
-    mystatus = db->Put(leveldb::WriteOptions(), key, valueSlice);
-    // LogPrintf("put result: %d\n", mystatus.ok());
-    assert(mystatus.ok());
-};
-
-std::string ContractDBWrapper::getState(std::string key)
-{
-    std::string buf;
-    mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
-    // LogPrintf("get result: %d\n", mystatus.ok());
-    return buf;
-};
-
 static void exec_dll(const uint256& contract, const std::vector<std::string>& args, int fd_state_read[2], int fd_state_write[2] )
 {
     int fd_error = open((GetContractsDir().string() + "/err").c_str(),

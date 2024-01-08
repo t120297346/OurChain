@@ -23,13 +23,34 @@ public:
     leveldb::Options options;
     leveldb::Status mystatus;
     // connect contract DB
-    ContractDBWrapper();
+    ContractDBWrapper(){
+        options.create_if_missing = true;
+        fs::path path = GetDataDir() / "contracts" / "index";
+        TryCreateDirectories(path);
+        leveldb::Status status = leveldb::DB::Open(options, path.string(), &db);
+        if (status.ok()) {
+            LogPrintf("Opening ContractLevelDB in %s\n", path.string());
+        }
+    }
     // disconnect contract DB
-    ~ContractDBWrapper();
+    ~ContractDBWrapper(){
+        delete db;
+        db = nullptr;
+    }
     // get state
-    std::string getState(std::string key);
+    std::string getState(std::string key){
+        std::string buf;
+        mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
+        // LogPrintf("get result: %d\n", mystatus.ok());
+        return buf;
+    }
     // set state
-    void setState(std::string key, void* buf, size_t size);
+    void setState(std::string key, void* buf, size_t size){
+        leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
+        mystatus = db->Put(leveldb::WriteOptions(), key, valueSlice);
+        // LogPrintf("put result: %d\n", mystatus.ok());
+        assert(mystatus.ok());
+    }
 };
 
 #endif // BITCOIN_CONTRACT_PROCESSING_H
