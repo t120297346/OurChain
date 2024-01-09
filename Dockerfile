@@ -23,12 +23,16 @@ RUN apt-get install gdb -y
 EXPOSE 22
 EXPOSE 8332
 
-# make
-RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && make -j8 && make install && ldconfig && mkdir ~/.bitcoin/
+# init
+RUN cd ~/Desktop/ourchain && git pull && ~/Desktop/ourchain/autogen.sh && ~/Desktop/ourchain/configure --without-gui && mkdir ~/.bitcoin/
 
 # set config
 RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=0.0.0.0/0\nregtest=1" >> /root/.bitcoin/bitcoin.conf
 
 # set entrypoint
 WORKDIR /root/Desktop/ourchain
+
+# compile
+RUN make -j8 && make install && ldconfig
+
 # ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]
