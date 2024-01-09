@@ -368,22 +368,13 @@ libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
 endif
 
 # ourcontract library
-include_HEADERS += contract/ourcontract.h
-contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract
+include_HEADERS += contract/ourcontract.h json/json.hpp
+contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract -I$(top_srcdir)/$(subdir)/json
 contract_libourcontract_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 contract_libourcontract_la_SOURCES = \
   contract/libourcontract.cpp \
   contract/ourcontract.h
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-#
-
-# json serialize library #
-include_HEADERS += json.hpp
-json_libjson_la_SOURCES = \
-  json.hpp
-json_libjson_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/json
-json_libjson_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-json_libjson_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
 
 # cli: shared between bitcoin-cli and bitcoin-qt
@@ -466,7 +457,7 @@ bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 ourcontract_rt_SOURCES = \
   contract/ourcontract-rt.cpp \
   contract/ourcontract.h
-ourcontract_rt_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract
+ourcontract_rt_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract -I$(top_srcdir)/$(subdir)/json
 ourcontract_rt_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 ourcontract_rt_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
