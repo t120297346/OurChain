@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string>
-#include <json/json.hpp>
+#include <json.hpp>
 
 using json = nlohmann::json;
 

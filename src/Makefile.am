@@ -369,21 +369,12 @@ endif
 
 # ourcontract library
 include_HEADERS += contract/ourcontract.h
-contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract
+contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract -I $(top_srcdir)/$(subdir)/json
 contract_libourcontract_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 contract_libourcontract_la_SOURCES = \
   contract/libourcontract.cpp \
   contract/ourcontract.h
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-#
-
-# json serialize library #
-include_HEADERS += json/json.hpp
-json_libjson_la_SOURCES = \
-  json/json.hpp
-json_libjson_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/json
-json_libjson_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-json_libjson_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
 
 # cli: shared between bitcoin-cli and bitcoin-qt
