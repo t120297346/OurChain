@@ -6,8 +6,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-using json = nlohmann::json;
-
 extern "C" int contract_main(int argc, char **argv) {
   // pure mode
   if (!check_runtime_can_write_db()) {
