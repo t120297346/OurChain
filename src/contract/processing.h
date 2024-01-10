@@ -25,12 +25,15 @@ private:
     fs::path path = GetDataDir() / "contracts" / "index";
     fs::path cachePath = GetDataDir() / "contracts" / "cache";
     fs::path checkPointPath = GetDataDir() / "contracts" / "checkPoints";
+
 public:
-    leveldb::Status getStatus(){
+    leveldb::Status getStatus()
+    {
         return mystatus;
     }
     // connect contract DB
-    ContractDBWrapper(){
+    ContractDBWrapper()
+    {
         leveldb::Options options;
         options.create_if_missing = true;
         TryCreateDirectories(path);
@@ -42,21 +45,23 @@ public:
         assert(mystatus.ok());
     }
     // disconnect contract DB
-    ~ContractDBWrapper(){
+    ~ContractDBWrapper()
+    {
         delete db;
         delete cacheDB;
         db = nullptr;
         cacheDB = nullptr;
     }
     // get state
-    std::string getState(std::string key){
+    std::string getState(std::string key)
+    {
         std::string buf;
         mystatus = cacheDB->Get(leveldb::ReadOptions(), key, &buf);
-        if(mystatus.ok()){
+        if (mystatus.ok()) {
             return buf;
         }
         mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
-        if(mystatus.ok()){
+        if (mystatus.ok()) {
             leveldb::Slice valueSlice = leveldb::Slice(buf);
             mystatus = cacheDB->Put(leveldb::WriteOptions(), key, valueSlice);
             assert(mystatus.ok());
@@ -65,18 +70,20 @@ public:
         return "";
     }
     // set state
-    void setState(std::string key, void* buf, size_t size){
+    void setState(std::string key, void* buf, size_t size)
+    {
         leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
         mystatus = cacheDB->Put(leveldb::WriteOptions(), key, valueSlice);
         // LogPrintf("put result: %d\n", mystatus.ok());
         assert(mystatus.ok());
     }
-    // sync state
-    void syncState(){
+    // sync state (move all state in cache to DB)
+    void syncState()
+    {
         leveldb::Iterator* it = cacheDB->NewIterator(leveldb::ReadOptions());
         leveldb::WriteOptions writeOptions;
         // writeOptions.sync = true; // sync write when want no error
-        for(it->SeekToFirst(); it->Valid(); it->Next()){
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
             std::string key = it->key().ToString();
             std::string value = it->value().ToString();
             mystatus = db->Put(writeOptions, key, value);
@@ -86,13 +93,83 @@ public:
         }
         delete it;
     }
+    // flush state (delete all state in cache)
+    void flushState()
+    {
+        leveldb::Iterator* it = cacheDB->NewIterator(leveldb::ReadOptions());
+        leveldb::WriteOptions writeOptions;
+        // writeOptions.sync = true; // sync write when want no error
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            std::string key = it->key().ToString();
+            std::string value = it->value().ToString();
+            mystatus = cacheDB->Delete(writeOptions, key);
+            assert(mystatus.ok());
+        }
+        delete it;
+    }
     // create check point
-    void createCheckPoint(){
-        // TODO: create check point
+    bool createCheckPoint(std::string pointId)
+    {
+        leveldb::DB* pointDB;
+        leveldb::Options options;
+        options.create_if_missing = true;
+        fs::path pointPath = checkPointPath / pointId;
+        TryCreateDirectories(pointPath);
+        mystatus = leveldb::DB::Open(options, pointPath.string(), &pointDB);
+        if (!mystatus.ok()) {
+            return false;
+        }
+        leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+        leveldb::WriteOptions writeOptions;
+        writeOptions.sync = true; // sync write when want no error
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            std::string key = it->key().ToString();
+            std::string value = it->value().ToString();
+            mystatus = pointDB->Put(writeOptions, key, value);
+            assert(mystatus.ok());
+        }
+        delete it;
+        delete pointDB;
+        pointDB = nullptr;
+        return true;
     }
     // recover from check point
-    void recoverFromCheckPoint(){
-        // TODO: recover from check point
+    bool recoverFromCheckPoint(std::string pointId)
+    {
+        fs::path pointPath = checkPointPath / pointId;
+        if (!fs::is_directory(pointPath)) {
+            return false;
+        }
+        // remove all state in DB
+        leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+        leveldb::WriteOptions writeOptions;
+        writeOptions.sync = true; // sync write when want no error
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            std::string key = it->key().ToString();
+            std::string value = it->value().ToString();
+            mystatus = db->Delete(writeOptions, key);
+            assert(mystatus.ok());
+        }
+        delete it;
+        // move state from check point to DB
+        leveldb::DB* pointDB;
+        leveldb::Options options;
+        options.create_if_missing = false;
+        mystatus = leveldb::DB::Open(options, pointPath.string(), &pointDB);
+        if (!mystatus.ok()) {
+            return false;
+        }
+        it = pointDB->NewIterator(leveldb::ReadOptions());
+        for (it->SeekToFirst(); it->Valid(); it->Next()) {
+            std::string key = it->key().ToString();
+            std::string value = it->value().ToString();
+            mystatus = db->Put(writeOptions, key, value);
+            assert(mystatus.ok());
+        }
+        delete it;
+        delete pointDB;
+        pointDB = nullptr;
+        return true;
     }
 };
 
