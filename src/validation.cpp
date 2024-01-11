@@ -1135,7 +1135,7 @@ void static InvalidBlockFound(CBlockIndex* pindex, const CValidationState& state
     }
 }
 
-CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs, std::vector<Contract>& nextContract, const CTransaction &curTx)
+CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs, std::vector<Contract>& nextContract, const CTransaction& curTx)
 {
     if (cont.action == 0) return CTransactionRef();
     CMutableTransaction mtx;
@@ -1971,6 +1971,8 @@ bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState& 
         if (fDoFullFlush || ((mode == FLUSH_STATE_ALWAYS || mode == FLUSH_STATE_PERIODIC) && nNow > nLastSetChain + (int64_t)DATABASE_WRITE_INTERVAL * 1000000)) {
             // Update best block in wallet (so we can detect restored wallets).
             GetMainSignals().SetBestChain(chainActive.GetLocator());
+            ContractObserver observer;
+            observer.onBlockConnected(chainActive, chainparams.GetConsensus());
             nLastSetChain = nNow;
         }
     } catch (const std::runtime_error& e) {

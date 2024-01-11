@@ -5,16 +5,31 @@
 #include "contract/contract.h"
 #include "primitives/transaction.h"
 
+#include "chain.h"
 #include "util.h"
+#include "validation.h"
 #include <leveldb/db.h>
 #include <string>
 #include <vector>
 
-typedef unsigned char uchar;
-
-bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std::vector<uchar>& state, CAmount balance, std::vector<Contract>& nextContract, const CTransaction& curTx);
+bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std::vector<unsigned char>& state, CAmount balance, std::vector<Contract>& nextContract, const CTransaction& curTx);
 
 std::string call_rt_pure(const uint256& contract, const std::vector<std::string>& args);
+
+class ContractStateCache
+{
+public:
+    ContractStateCache(){
+        // LogPrintf("ContractStateCache init\n");
+    };
+    ~ContractStateCache(){
+        // LogPrintf("ContractStateCache destroy\n");
+    };
+
+private:
+    uint256 blockTipHash;
+    int blockTipHeight;
+};
 
 class ContractDBWrapper
 {
@@ -172,5 +187,56 @@ public:
         return true;
     }
 };
+
+class ContractObserver
+{
+public:
+    ContractObserver()
+    {
+        // LogPrintf("ContractObserver init\n");
+    }
+    ~ContractObserver()
+    {
+        // LogPrintf("ContractObserver destroy\n");
+    }
+    bool onBlockConnected(CChain& chainActive, const Consensus::Params consensusParams)
+    {
+        // get blocks in chainActive
+        for (CBlockIndex* pindex = chainActive.Tip(); pindex != nullptr; pindex = pindex->pprev) {
+            CBlock block;
+            ReadBlockFromDisk(block, pindex, consensusParams);
+            // print transaction in block
+            LogPrintf("block %d\n", pindex->nHeight);
+            for (const CTransactionRef& tx : block.vtx) {
+                if (tx.get()->contract.action == ACTION_NEW) {
+                    LogPrintf("contract %s\n", tx.get()->contract.address.ToString().c_str());
+                    LogPrintf("tx %s\n", tx.get()->contract.code.c_str());
+                } else if (tx.get()->contract.action == ACTION_CALL) {
+                    LogPrintf("call %s\n", tx.get()->contract.address.ToString().c_str());
+                    // print args
+                    for (const std::string& arg : tx.get()->contract.args) {
+                        LogPrintf("arg %s\n", arg.c_str());
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    bool onBlockDisconnected(const CBlock& block)
+    {
+        // LogPrintf("onBlockDisconnected\n");
+        return true;
+    }
+    bool onChainInitialized(const CChain& chainActive, const Consensus::Params consensusParams)
+    {
+        // LogPrintf("onChainInitialized\n");
+        return true;
+    }
+
+private:
+};
+
+// global variable
+static ContractStateCache contractStateCache;
 
 #endif // BITCOIN_CONTRACT_PROCESSING_H

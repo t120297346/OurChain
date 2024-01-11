@@ -34,11 +34,11 @@ const static fs::path& GetContractsDir()
     return contracts_dir;
 }
 
-static void exec_dll(const uint256& contract, const std::vector<std::string>& args, int fd_state_read[2], int fd_state_write[2] )
+static void exec_dll(const uint256& contract, const std::vector<std::string>& args, int fd_state_read[2], int fd_state_write[2])
 {
     int fd_error = open((GetContractsDir().string() + "/err").c_str(),
-            O_WRONLY | O_APPEND | O_CREAT,
-            0664);
+        O_WRONLY | O_APPEND | O_CREAT,
+        0664);
     dup2(fd_error, STDERR_FILENO);
     close(fd_error);
     // state & TX
@@ -60,7 +60,8 @@ static void exec_dll(const uint256& contract, const std::vector<std::string>& ar
     exit(EXIT_FAILURE);
 }
 
-static void read_state_from_db(ContractDBWrapper &cdb, std::string &hex_ctid, int &flag, FILE* pipe_state_write){
+static void read_state_from_db(ContractDBWrapper& cdb, std::string& hex_ctid, int& flag, FILE* pipe_state_write)
+{
     std::string newbuffer = cdb.getState(hex_ctid.c_str());
     if (cdb.getStatus().ok()) {
         flag = newbuffer.size();
@@ -75,14 +76,16 @@ static void read_state_from_db(ContractDBWrapper &cdb, std::string &hex_ctid, in
     }
 }
 
-static int read_buffer_size(FILE* pipe_state_read){
+static int read_buffer_size(FILE* pipe_state_read)
+{
     int size;
     int ret = fread((void*)&size, sizeof(int), 1, pipe_state_read);
     assert(ret >= 0);
     return size;
 }
 
-static void write_state_to_db(ContractDBWrapper &cdb, std::string &hex_ctid, int &size, FILE* pipe_state_read){
+static void write_state_to_db(ContractDBWrapper& cdb, std::string& hex_ctid, int& size, FILE* pipe_state_read)
+{
     // LogPrintf("message recieve write %d\n", flag);
     // state.resize(flag);
     char* tmp = (char*)malloc(size);
@@ -92,7 +95,8 @@ static void write_state_to_db(ContractDBWrapper &cdb, std::string &hex_ctid, int
     free(tmp);
 }
 
-static std::string read_char64(FILE* pipe_state_read){
+static std::string read_char64(FILE* pipe_state_read)
+{
     int size = sizeof(char) * 64;
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
@@ -102,7 +106,8 @@ static std::string read_char64(FILE* pipe_state_read){
     return address;
 }
 
-static std::string write_state_as_string(ContractDBWrapper &cdb, std::string &hex_ctid, int &size, FILE* pipe_state_read){
+static std::string write_state_as_string(ContractDBWrapper& cdb, std::string& hex_ctid, int& size, FILE* pipe_state_read)
+{
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
     assert(ret >= 0);
@@ -133,7 +138,7 @@ static int call_mkdll(const uint256& contract)
     return 0;
 }
 
-static int call_rt(const uint256& contract, const std::vector<std::string>& args, std::vector<CTxOut>& vTxOut, std::vector<uchar>& state, std::vector<Contract>& nextContract, const CTransaction& curTx)
+static int call_rt(const uint256& contract, const std::vector<std::string>& args, std::vector<CTxOut>& vTxOut, std::vector<unsigned char>& state, std::vector<Contract>& nextContract, const CTransaction& curTx)
 {
     int pid, status;
     int fd_state_read[2], fd_state_write[2];
@@ -162,7 +167,7 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
         } else if (flag == BYTE_WRITE_STATE) { // write state
             int size = read_buffer_size(pipe_state_read);
             write_state_to_db(cdb, hex_ctid, size, pipe_state_read);
-        } else if(flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
+        } else if (flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
             flag = 1;
             fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
             fflush(pipe_state_write);
@@ -183,7 +188,8 @@ static int call_rt(const uint256& contract, const std::vector<std::string>& args
     return 0;
 }
 
-std::string call_rt_pure(const uint256& contract, const std::vector<std::string>& args){
+std::string call_rt_pure(const uint256& contract, const std::vector<std::string>& args)
+{
     int pid, status;
     int fd_state_read[2], fd_state_write[2];
     if (pipe(fd_state_read) == -1) return "";
@@ -212,12 +218,12 @@ std::string call_rt_pure(const uint256& contract, const std::vector<std::string>
         } else if (flag == BYTE_WRITE_STATE) { // write state
             int size = read_buffer_size(pipe_state_read);
             result = write_state_as_string(cdb, hex_ctid, size, pipe_state_read);
-        } else if(flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
+        } else if (flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
             flag = 0;
             fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
             fflush(pipe_state_write);
         } else if (flag == GET_PRE_TXID_STATE) {
-            char* tmp = new char[64] {0};
+            char* tmp = new char[64]{0};
             fwrite((void*)tmp, sizeof(char) * 64, 1, pipe_state_write);
             fflush(pipe_state_write);
         } else {
@@ -233,7 +239,7 @@ std::string call_rt_pure(const uint256& contract, const std::vector<std::string>
     return result;
 }
 
-bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std::vector<uchar>& state, CAmount balance, std::vector<Contract>& nextContract, const CTransaction& curTx)
+bool ProcessContract(const Contract& contract, std::vector<CTxOut>& vTxOut, std::vector<unsigned char>& state, CAmount balance, std::vector<Contract>& nextContract, const CTransaction& curTx)
 {
     if (contract.action == contract_action::ACTION_NEW) {
         fs::path new_dir = GetContractsDir() / contract.address.GetHex();
