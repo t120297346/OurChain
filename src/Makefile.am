@@ -105,6 +105,10 @@ BITCOIN_CORE_H = \
   consensus/consensus.h \
   consensus/tx_verify.h \
   contract/processing.h \
+  contract/cache.h \
+  contract/dbWrapper.h \
+  contract/observer.h \
+  contract/updateStrategy.h \
   core_io.h \
   core_memusage.h \
   cuckoocache.h \
@@ -199,6 +203,10 @@ libbitcoin_server_a_SOURCES = \
   checkpoints.cpp \
   consensus/tx_verify.cpp \
   contract/processing.cpp \
+  contract/cache.cpp \
+  contract/dbWrapper.cpp \
+  contract/observer.cpp \
+  contract/updateStrategy.cpp \
   httprpc.cpp \
   httpserver.cpp \
   init.cpp \
