@@ -1,5 +1,59 @@
 #include "contract/dbWrapper.h"
 
+ContractDBWrapper::ContractDBWrapper(std::string name)
+{
+    leveldb::Options options;
+    options.create_if_missing = true;
+    fs::path path = getContractDBPath(name);
+    TryCreateDirectories(path);
+    mystatus = leveldb::DB::Open(options, path.string(), &db);
+    assert(mystatus.ok());
+}
+
+ContractDBWrapper::ContractDBWrapper(std::string checkPointBlockHash, bool isCheckPoint)
+{
+    assert(isCheckPoint);
+    leveldb::Options options;
+    options.create_if_missing = false;
+    fs::path path = getContractCheckPointPath(checkPointBlockHash);
+    mystatus = leveldb::DB::Open(options, path.string(), &db);
+    assert(mystatus.ok());
+}
+
+ContractDBWrapper::~ContractDBWrapper()
+{
+    delete db;
+    db = nullptr;
+}
+
+leveldb::Status ContractDBWrapper::getStatus()
+{
+    return mystatus;
+}
+bool ContractDBWrapper::isOk()
+{
+    return mystatus.ok();
+}
+// set critical save
+void ContractDBWrapper::setCriticalSave()
+{
+    writeOptions.sync = true;
+}
+leveldb::Iterator* ContractDBWrapper::getIterator()
+{
+    return db->NewIterator(leveldb::ReadOptions());
+}
+
+void ContractDBWrapper::transferAllState(ContractDBWrapper& target)
+{
+    target.clearAllStates();
+    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        target.setState(it->key().ToString(), it->value().ToString());
+    }
+    delete it;
+}
+
 std::string ContractDBWrapper::getState(std::string key)
 {
     std::string value;
@@ -36,4 +90,56 @@ void ContractDBWrapper::clearAllStates()
         deleteState(it->first);
         assert(isOk());
     }
+}
+
+void ContractDBWrapper::clearAndSaveDuplicateState(fs::path path)
+{
+    // use fs delete all files in path
+    remove_all(path);
+    // save duplicate state
+    saveDuplicateState(path);
+}
+
+void ContractDBWrapper::saveDuplicateState(fs::path path)
+{
+    leveldb::DB* newdb;
+    leveldb::Options options;
+    options.create_if_missing = true;
+    leveldb::Status status = leveldb::DB::Open(options, path.string(), &newdb);
+    assert(status.ok());
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        status = newdb->Put(writeOptions, it->key(), it->value());
+        if (!status.ok()) {
+            LogPrintf("saveCheckPoint: %s, should rebuild\n", status.ToString());
+            remove_all(path);
+            assert(false);
+        }
+    }
+    delete it;
+    delete newdb;
+}
+
+// save contract checkPoint
+void ContractDBWrapper::saveCheckPoint(std::string tipBlockHash)
+{
+    fs::path path = getContractCheckPointPath(tipBlockHash);
+    TryCreateDirectories(path);
+    saveDuplicateState(path);
+}
+
+void ContractDBWrapper::saveTmpState()
+{
+    fs::path path = getContractDBPath("tmp");
+    TryCreateDirectories(path);
+    clearAndSaveDuplicateState(path);
+}
+
+// find check point
+bool ContractDBWrapper::findCheckPoint(std::string tipBlockHash)
+{
+    fs::path path = getContractCheckPointPath(tipBlockHash);
+    return exists(path);
 }

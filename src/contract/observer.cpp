@@ -6,10 +6,6 @@ ContractObserver::ContractObserver(ContractStateCache* cache)
     this->updateStrategyFactory = UpdateStrategyFactory();
 }
 
-ContractObserver::~ContractObserver()
-{
-}
-
 bool ContractObserver::onChainStateSet(CChain& chainActive, const Consensus::Params consensusParams)
 {
     auto curUpdateStrategy = updateStrategyFactory.createUpdateStrategy(chainActive, cache);
