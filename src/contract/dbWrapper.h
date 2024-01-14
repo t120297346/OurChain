@@ -64,6 +64,11 @@ public:
 
     // clear all states
     void clearAllStates();
+
+    leveldb::Iterator* getIterator()
+    {
+        return db->NewIterator(leveldb::ReadOptions());
+    }
 };
 
 

@@ -40,29 +40,99 @@ private:
     ContractDBWrapper* dbWrapper;
 };
 
+class BlockCache
+{
+public:
+    BlockCache()
+    {
+        dbWrapper = new ContractDBWrapper(std::string("block_index"));
+    }
+    ~BlockCache()
+    {
+        delete dbWrapper;
+    }
+    struct blockIndex {
+        uint256 blockHash;
+        int blockHeight;
+
+        blockIndex()
+        {
+            blockHash = uint256();
+            blockHeight = -1;
+        }
+        blockIndex(uint256 blockHash, int blockHeight)
+        {
+            this->blockHash = blockHash;
+            this->blockHeight = blockHeight;
+        }
+    };
+    void clear()
+    {
+        dbWrapper->clearAllStates();
+    }
+    void setBlockIndex(uint256 blockHash, int blockHeight)
+    {
+        dbWrapper->setState(intToKey(blockHeight), blockHash.ToString());
+        assert(dbWrapper->isOk());
+    }
+    uint256 getBlockHash(int blockHeight)
+    {
+        std::string blockHash = dbWrapper->getState(intToKey(blockHeight));
+        if (dbWrapper->isOk() == false)
+            return uint256();
+        return uint256S(blockHash);
+    }
+    blockIndex getHeighestBlock()
+    {
+        leveldb::Iterator* it = dbWrapper->getIterator();
+        // 定位到数据库的最后一个条目
+        it->SeekToLast();
+        if (it->Valid() == false) {
+            delete it;
+            return blockIndex{uint256(), -1};
+        }
+        blockIndex result = blockIndex(uint256S(it->value().ToString()), keyToInt(it->key().ToString()));
+        delete it;
+        return result;
+    }
+    void removeBlockIndex(int blockHeight)
+    {
+        dbWrapper->deleteState(intToKey(blockHeight));
+        assert(dbWrapper->isOk());
+    }
+
+private:
+    ContractDBWrapper* dbWrapper;
+    std::string intToKey(int num)
+    {
+        std::string key;
+        key.resize(sizeof(int));
+        for (size_t i = 0; i < sizeof(int); ++i) {
+            key[sizeof(int) - i - 1] = (num >> (i * 8)) & 0xFF;
+        }
+        return key;
+    }
+    int keyToInt(const std::string& key)
+    {
+        int num = 0;
+        for (size_t i = 0; i < sizeof(int); ++i) {
+            num = (num << 8) | static_cast<unsigned char>(key[i]);
+        }
+        return num;
+    }
+};
+
 class ContractStateCache
 {
 public:
-    class BlcokCache
-    {
-    public:
-        BlcokCache(int heigh, uint256 hash)
-        {
-            blockHeight = heigh;
-            blockHash = hash;
-        }
-        ~BlcokCache() {}
-        int blockHeight;
-        uint256 blockHash;
-    };
-
     ContractStateCache()
     {
-        blockCache.clear();
+        blockCache = new BlockCache();
         snapShot = new SnapShot(std::string("current_cache"));
     }
     ~ContractStateCache()
     {
+        delete blockCache;
         delete snapShot;
     }
     SnapShot* getSnapShot();
@@ -70,24 +140,30 @@ public:
     {
         snapShot->clear();
     }
-    ContractStateCache::BlcokCache* getFirstBlockCache()
+    bool getFirstBlockCache(BlockCache::blockIndex& blockIndex)
     {
-        if (blockCache.size() == 0)
-            return nullptr;
-        return &blockCache[0];
+        blockIndex = blockCache->getHeighestBlock();
+        if (blockIndex.blockHeight == -1)
+            return false;
+        return true;
     }
-    std::vector<BlcokCache>* getBlockCache()
+    BlockCache* getBlockCache()
     {
-        return &blockCache;
+        return blockCache;
     }
-    void setBlockCache(std::vector<BlcokCache>& blockCache)
+    void pushBlock(BlockCache::blockIndex blockIndex)
     {
-        this->blockCache = blockCache;
+        blockCache->setBlockIndex(blockIndex.blockHash, blockIndex.blockHeight);
+    }
+    void popBlock()
+    {
+        BlockCache::blockIndex blockIndex = blockCache->getHeighestBlock();
+        blockCache->removeBlockIndex(blockIndex.blockHeight);
     }
 
 
 private:
-    std::vector<BlcokCache> blockCache;
+    BlockCache* blockCache;
     SnapShot* snapShot;
 };
 

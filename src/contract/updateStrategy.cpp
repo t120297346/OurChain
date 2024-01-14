@@ -5,12 +5,12 @@ UpdateStrategy* UpdateStrategyFactory::createUpdateStrategy(CChain& chainActive,
 {
     int curHeight = chainActive.Height();
     uint256 curHash = chainActive.Tip()->GetBlockHash();
-    auto cacheObj = cache->getFirstBlockCache();
-    if (cacheObj == nullptr) {
+    BlockCache::blockIndex firstBlock;
+    if (!cache->getFirstBlockCache(firstBlock)) {
         return new UpdateStrategyRebuild();
     }
-    int cacheHeight = cacheObj->blockHeight;
-    uint256 cacheHash = cacheObj->blockHash;
+    int cacheHeight = firstBlock.blockHeight;
+    uint256 cacheHash = firstBlock.blockHash;
     if (curHash == cacheHash && curHeight == cacheHeight) {
         return new UpdateStrategyUnDo();
     }
@@ -31,18 +31,21 @@ UpdateStrategy* UpdateStrategyFactory::createUpdateStrategy(CChain& chainActive,
 bool UpdateStrategyRebuild::UpdateSnapShot(ContractStateCache& cache, SnapShot& snapShot, CChain& chainActive, const Consensus::Params consensusParams)
 {
     cache.getSnapShot()->clear();
-    auto newCacheBlocks = std::vector<ContractStateCache::BlcokCache>();
+    cache.getBlockCache()->clear();
     auto realBlock = std::stack<CBlock*>();
     for (CBlockIndex* pindex = chainActive.Tip(); pindex != nullptr; pindex = pindex->pprev) {
         CBlock* block = new CBlock();
+        // push block index to cache
         int height = pindex->nHeight;
         uint256 hash = pindex->GetBlockHash();
-        newCacheBlocks.push_back(ContractStateCache::BlcokCache(height, hash));
+        cache.pushBlock(BlockCache::blockIndex(hash, height));
+        // save block data in memory
         if (!ReadBlockFromDisk(*block, pindex, consensusParams)) {
             return false;
         }
         realBlock.push(block);
     }
+    // process all contract in blocks
     while (realBlock.size() > 0) {
         CBlock* tmpBlock = realBlock.top();
         realBlock.pop();
@@ -53,7 +56,6 @@ bool UpdateStrategyRebuild::UpdateSnapShot(ContractStateCache& cache, SnapShot& 
         }
         delete tmpBlock;
     }
-    cache.setBlockCache(newCacheBlocks);
     return true;
 }
 
