@@ -21,18 +21,7 @@ bool ContractObserver::onChainStateSet(CChain& chainActive, const Consensus::Par
         LogPrintf("snapshot: update\n");
         return false;
     }
-    // if (!curUpdateStrategy.UpdateCheckpoint(cache)) {
-    //     return false;
-    // }
-    // if (!curUpdateStrategy.UpdateDiskCheckpoint(cache)) {
-    //     return false;
-    // }
-
-    return true;
-}
-
-bool ContractObserver::onChainInitialized(CChain& chainActive, const Consensus::Params consensusParams)
-{
-    // LogPrintf("onChainInitialized\n");
+    cache->saveCheckPoint();
+    cache->saveTmpState();
     return true;
 }

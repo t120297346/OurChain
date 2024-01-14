@@ -60,9 +60,8 @@ static void exec_dll(const uint256& contract, const std::vector<std::string>& ar
     exit(EXIT_FAILURE);
 }
 
-static void read_state_from_cache(ContractStateCache* cache, std::string& hex_ctid, int& flag, FILE* pipe_state_write)
+static void read_state_from_json(json j, int& flag, FILE* pipe_state_write)
 {
-    json j = cache->getSnapShot()->getContractState(uint256S(hex_ctid));
     if (!j.is_null()) {
         std::string newbuffer = j.dump();
         flag = newbuffer.size();
@@ -75,6 +74,18 @@ static void read_state_from_cache(ContractStateCache* cache, std::string& hex_ct
         fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
         fflush(pipe_state_write);
     }
+}
+
+static void read_state_from_cache(ContractStateCache* cache, std::string& hex_ctid, int& flag, FILE* pipe_state_write)
+{
+    json j = cache->getSnapShot()->getContractState(uint256S(hex_ctid));
+    read_state_from_json(j, flag, pipe_state_write);
+}
+
+static void read_state_from_tmpDB(ContractDBWrapper* cache, std::string& hex_ctid, int& flag, FILE* pipe_state_write)
+{
+    json j = json::parse(cache->getState(hex_ctid));
+    read_state_from_json(j, flag, pipe_state_write);
 }
 
 static int read_buffer_size(FILE* pipe_state_read)
@@ -186,7 +197,7 @@ static int call_rt(ContractStateCache* cache, const uint256& contract, const std
     return 0;
 }
 
-std::string call_rt_pure(ContractStateCache* cache, const uint256& contract, const std::vector<std::string>& args)
+std::string call_rt_pure(ContractDBWrapper* cache, const uint256& contract, const std::vector<std::string>& args)
 {
     int pid, status;
     int fd_state_read[2], fd_state_write[2];
@@ -211,9 +222,7 @@ std::string call_rt_pure(ContractStateCache* cache, const uint256& contract, con
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == BYTE_READ_STATE) { // read state
             auto targetAddress = read_char64(pipe_state_read);
-            json j = cache->getSnapShot()->getContractState(uint256S(targetAddress));
-            LogPrintf("j: %s\n", j.dump().c_str());
-            read_state_from_cache(cache, targetAddress, flag, pipe_state_write);
+            read_state_from_tmpDB(cache, targetAddress, flag, pipe_state_write);
         } else if (flag == BYTE_WRITE_STATE) { // write state
             int size = read_buffer_size(pipe_state_read);
             result = write_state_as_string(hex_ctid, size, pipe_state_read);

@@ -16,6 +16,6 @@
 
 bool ProcessContract(const Contract& contract, const CTransactionRef& curTx, ContractStateCache* cache);
 
-std::string call_rt_pure(ContractStateCache* cache, const uint256& contract, const std::vector<std::string>& args);
+std::string call_rt_pure(ContractDBWrapper* cache, const uint256& contract, const std::vector<std::string>& args);
 
 #endif // CONTRACT_PROCESSING_H

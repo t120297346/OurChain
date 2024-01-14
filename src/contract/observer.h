@@ -14,7 +14,6 @@ public:
     ContractObserver(ContractStateCache* cache);
     ~ContractObserver();
     bool onChainStateSet(CChain& chainActive, const Consensus::Params consensusParams);
-    bool onChainInitialized(CChain& chainActive, const Consensus::Params consensusParams);
 
 private:
     ContractStateCache* cache;

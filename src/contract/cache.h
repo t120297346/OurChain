@@ -35,6 +35,22 @@ public:
     {
         dbWrapper->clearAllStates();
     }
+    void saveCheckPoint(std::string tipBlockHash)
+    {
+        dbWrapper->saveCheckPoint(tipBlockHash);
+    }
+    void saveTmpState()
+    {
+        dbWrapper->saveTmpState();
+    }
+    bool isCheckPointExist(std::string tipBlockHash)
+    {
+        return dbWrapper->findCheckPoint(tipBlockHash);
+    }
+    ContractDBWrapper* getDBWrapper()
+    {
+        return dbWrapper;
+    }
 
 private:
     ContractDBWrapper* dbWrapper;
@@ -160,11 +176,48 @@ public:
         BlockCache::blockIndex blockIndex = blockCache->getHeighestBlock();
         blockCache->removeBlockIndex(blockIndex.blockHeight);
     }
-
+    void saveCheckPoint()
+    {
+        auto blockIndex = blockCache->getHeighestBlock();
+        if (snapShot->isCheckPointExist(blockIndex.blockHash.ToString()))
+            return;
+        if (isSaveCheckPointNow(blockIndex.blockHeight))
+            snapShot->saveCheckPoint(blockIndex.blockHash.ToString());
+    }
+    void saveTmpState()
+    {
+        if (isSaveReadReplicaNow(blockCache->getHeighestBlock().blockHeight))
+            snapShot->saveTmpState();
+    }
+    bool restoreCheckPoint()
+    {
+        auto blockIndex = blockCache->getHeighestBlock();
+        if (snapShot->isCheckPointExist(blockIndex.blockHash.ToString())) {
+            auto checkSnapShot = ContractDBWrapper(std::string("checkPoint/") + blockIndex.blockHash.ToString());
+            return true;
+        }
+        return false;
+    }
 
 private:
     BlockCache* blockCache;
     SnapShot* snapShot;
+
+    bool isSaveCheckPointNow(int height)
+    {
+        if (height == 0)
+            return false;
+        if (height % 10 == 0)
+            return true;
+        return false;
+    }
+
+    bool isSaveReadReplicaNow(int height)
+    {
+        if (height % 2 == 0)
+            return true;
+        return false;
+    }
 };
 
 #endif // CONTRACT_CACHE_H

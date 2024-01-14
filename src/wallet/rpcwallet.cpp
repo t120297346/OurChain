@@ -3139,31 +3139,14 @@ static void SendContractTx(CWallet* const pwallet, const Contract* contract, con
 
 static bool ReadFile(const std::string& filename, std::string& buf)
 {
-    // if ((filename.find("http") < filename.length()) && (filename.find("http") >= 0)) {
-    if (filename.find("http") < filename.length()) {
-        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.cpp";
-        system(command.c_str());
+    std::string line;
+    std::ifstream file(filename);
 
-        std::string line;
-        std::ifstream file(GetDataDir().string() + "/code.cpp");
-        if (file.is_open() == false) return false;
-        while (getline(file, line))
-            buf += (line + "\n");
-        file.close();
-
-        command = "rm " + GetDataDir().string() + "/code.cpp";
-        system(command.c_str());
-        return true;
-    } else {
-        std::string line;
-        std::ifstream file(filename);
-
-        if (file.is_open() == false) return false;
-        while (getline(file, line))
-            buf += (line + "\n");
-        file.close();
-        return true;
-    }
+    if (file.is_open() == false) return false;
+    while (getline(file, line))
+        buf += (line + "\n");
+    file.close();
+    return true;
 }
 
 UniValue deploycontract(const JSONRPCRequest& request)
@@ -3312,7 +3295,7 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
         for (unsigned i = 1; i < request.params.size(); i++)
             args.push_back(request.params[i].get_str());
     }
-    ContractStateCache cache;
+    auto cache = ContractDBWrapper("tmp");
     std::string buf = call_rt_pure(&cache, contract_address, args);
     UniValue uv;
     // const bool ok = uv.read(buf);
