@@ -1,29 +1,43 @@
 #ifndef CONTRACT_CACHE_H
 #define CONTRACT_CACHE_H
 #include "contract/contract.h"
+#include "contract/dbWrapper.h"
 #include "json/json.hpp"
 
 using json = nlohmann::json;
 
+
 class SnapShot
 {
 public:
-    SnapShot();
-    ~SnapShot();
-
-    // duplicate this class
-    SnapShot& operator=(const SnapShot& snapShot);
-
-    void setContractState(uint256 address, json state);
-    json getContractState(uint256 address);
-    void clear()
+    SnapShot(std::string name)
     {
-        contractStateMap.clear();
+        dbWrapper = new ContractDBWrapper(name);
+    }
+    ~SnapShot()
+    {
+        delete dbWrapper;
     }
 
+    void setContractState(uint256 address, json state)
+    {
+        dbWrapper->setState(address.ToString(), state.dump());
+        assert(dbWrapper->isOk());
+    }
+    json getContractState(uint256 address)
+    {
+        std::string state = dbWrapper->getState(address.ToString());
+        if (dbWrapper->isOk() == false)
+            return nullptr;
+        return json::parse(state);
+    }
+    void clear()
+    {
+        dbWrapper->clearAllStates();
+    }
 
 private:
-    std::map<uint256, json> contractStateMap;
+    ContractDBWrapper* dbWrapper;
 };
 
 class ContractStateCache
@@ -42,14 +56,20 @@ public:
         uint256 blockHash;
     };
 
-    ContractStateCache();
-    ~ContractStateCache();
-    SnapShot& getSnapShot();
+    ContractStateCache()
+    {
+        blockCache.clear();
+        snapShot = new SnapShot(std::string("current_cache"));
+    }
+    ~ContractStateCache()
+    {
+        delete snapShot;
+    }
+    SnapShot* getSnapShot();
     void clearSnapShot()
     {
-        snapShot.clear();
+        snapShot->clear();
     }
-    void setSnapShot(SnapShot& snapShot);
     ContractStateCache::BlcokCache* getFirstBlockCache()
     {
         if (blockCache.size() == 0)
@@ -68,7 +88,7 @@ public:
 
 private:
     std::vector<BlcokCache> blockCache;
-    SnapShot snapShot;
+    SnapShot* snapShot;
 };
 
 #endif // CONTRACT_CACHE_H

@@ -2464,10 +2464,13 @@ bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams,
 
     {
         LOCK(cs_main);
+        ContractStateCache contractStateCache;
         ContractObserver observer(&contractStateCache);
         if (!observer.onChainStateSet(chainActive, chainparams.GetConsensus())) {
             return false;
         }
+        // should be called after onChainStateSet
+        LogPrintf("ActivateBestChain\n");
     }
 
     return true;

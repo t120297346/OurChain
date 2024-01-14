@@ -9,7 +9,7 @@
           "type": "cppdbg",
           "request": "launch",
           "program": "${workspaceFolder}/src/bitcoind",
-          "args": [],
+          "args": ["-txindex"],
           "stopAtEntry": false,
           "cwd": "${workspaceFolder}",
           "environment": [],

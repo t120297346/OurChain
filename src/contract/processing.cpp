@@ -62,7 +62,7 @@ static void exec_dll(const uint256& contract, const std::vector<std::string>& ar
 
 static void read_state_from_cache(ContractStateCache* cache, std::string& hex_ctid, int& flag, FILE* pipe_state_write)
 {
-    json j = cache->getSnapShot().getContractState(uint256S(hex_ctid));
+    json j = cache->getSnapShot()->getContractState(uint256S(hex_ctid));
     if (!j.is_null()) {
         std::string newbuffer = j.dump();
         flag = newbuffer.size();
@@ -90,7 +90,7 @@ static void write_state_to_cache(ContractStateCache* cache, std::string& hex_cti
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
     assert(ret >= 0);
-    cache->getSnapShot().setContractState(uint256S(hex_ctid), json::parse(tmp));
+    cache->getSnapShot()->setContractState(uint256S(hex_ctid), json::parse(tmp));
     free(tmp);
 }
 
@@ -211,7 +211,7 @@ std::string call_rt_pure(ContractStateCache* cache, const uint256& contract, con
     while (fread((void*)&flag, sizeof(int), 1, pipe_state_read) != 0) {
         if (flag == BYTE_READ_STATE) { // read state
             auto targetAddress = read_char64(pipe_state_read);
-            json j = cache->getSnapShot().getContractState(uint256S(targetAddress));
+            json j = cache->getSnapShot()->getContractState(uint256S(targetAddress));
             LogPrintf("j: %s\n", j.dump().c_str());
             read_state_from_cache(cache, targetAddress, flag, pipe_state_write);
         } else if (flag == BYTE_WRITE_STATE) { // write state

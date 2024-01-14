@@ -1,47 +1,39 @@
 #include "contract/dbWrapper.h"
 
-ContractDBWrapper::ContractDBWrapper()
-{
-    leveldb::Options options;
-    options.create_if_missing = true;
-    TryCreateDirectories(path);
-    TryCreateDirectories(cachePath);
-    TryCreateDirectories(checkPointPath);
-    mystatus = leveldb::DB::Open(options, path.string(), &db);
-    assert(mystatus.ok());
-    mystatus = leveldb::DB::Open(options, cachePath.string(), &cacheDB);
-    assert(mystatus.ok());
-}
-
-ContractDBWrapper::~ContractDBWrapper()
-{
-    delete db;
-    delete cacheDB;
-    db = nullptr;
-    cacheDB = nullptr;
-}
-
 std::string ContractDBWrapper::getState(std::string key)
 {
-    std::string buf;
-    mystatus = cacheDB->Get(leveldb::ReadOptions(), key, &buf);
-    if (mystatus.ok()) {
-        return buf;
-    }
-    mystatus = db->Get(leveldb::ReadOptions(), key, &buf);
-    if (mystatus.ok()) {
-        leveldb::Slice valueSlice = leveldb::Slice(buf);
-        mystatus = cacheDB->Put(leveldb::WriteOptions(), key, valueSlice);
-        assert(mystatus.ok());
-        return buf;
-    }
-    return "";
+    std::string value;
+    mystatus = db->Get(leveldb::ReadOptions(), key, &value);
+    return value;
 }
 
-void ContractDBWrapper::setState(std::string key, void* buf, size_t size)
+void ContractDBWrapper::setState(std::string key, std::string value)
 {
-    leveldb::Slice valueSlice = leveldb::Slice((const char*)buf, size);
-    mystatus = cacheDB->Put(leveldb::WriteOptions(), key, valueSlice);
-    // LogPrintf("put result: %d\n", mystatus.ok());
-    assert(mystatus.ok());
+    mystatus = db->Put(leveldb::WriteOptions(), key, value);
+}
+
+void ContractDBWrapper::deleteState(std::string key)
+{
+    mystatus = db->Delete(leveldb::WriteOptions(), key);
+}
+
+std::map<std::string, std::string> ContractDBWrapper::getAllStates()
+{
+    std::map<std::string, std::string> states;
+    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        states[it->key().ToString()] = it->value().ToString();
+    }
+    assert(it->status().ok());
+    delete it;
+    return states;
+}
+
+void ContractDBWrapper::clearAllStates()
+{
+    std::map<std::string, std::string> states = getAllStates();
+    for (auto it = states.begin(); it != states.end(); it++) {
+        deleteState(it->first);
+        assert(isOk());
+    }
 }

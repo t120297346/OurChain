@@ -248,7 +248,6 @@ libbitcoin_zmq_a_SOURCES = \
   zmq/zmqpublishnotifier.cpp
 endif
 
-
 # wallet: shared between bitcoind and bitcoin-qt, but only linked
 # when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -261,6 +260,11 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/rpcwallet.cpp \
   wallet/wallet.cpp \
   wallet/walletdb.cpp \
+  contract/processing.cpp \
+  contract/updateStrategy.cpp \
+  contract/observer.cpp \
+  contract/dbWrapper.cpp \
+  contract/cache.cpp \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library

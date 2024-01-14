@@ -30,7 +30,7 @@ UpdateStrategy* UpdateStrategyFactory::createUpdateStrategy(CChain& chainActive,
 
 bool UpdateStrategyRebuild::UpdateSnapShot(ContractStateCache& cache, SnapShot& snapShot, CChain& chainActive, const Consensus::Params consensusParams)
 {
-    cache.getSnapShot().clear();
+    cache.getSnapShot()->clear();
     auto newCacheBlocks = std::vector<ContractStateCache::BlcokCache>();
     auto realBlock = std::stack<CBlock*>();
     for (CBlockIndex* pindex = chainActive.Tip(); pindex != nullptr; pindex = pindex->pprev) {
@@ -47,9 +47,6 @@ bool UpdateStrategyRebuild::UpdateSnapShot(ContractStateCache& cache, SnapShot& 
         CBlock* tmpBlock = realBlock.top();
         realBlock.pop();
         for (const CTransactionRef& tx : tmpBlock->vtx) {
-            // Process contract in tx
-            // print tx.get()->contract.action
-            LogPrintf("tx.get()->contract.action: %d\n", tx.get()->contract.action);
             if (!ProcessContract(tx.get()->contract, tx, &cache)) {
                 return false;
             }

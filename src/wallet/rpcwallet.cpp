@@ -7,7 +7,6 @@
 #include "base58.h"
 #include "chain.h"
 #include "consensus/validation.h"
-#include "contract/contract.h"
 #include "contract/processing.h"
 #include "core_io.h"
 #include "httpserver.h"
@@ -3313,7 +3312,8 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
         for (unsigned i = 1; i < request.params.size(); i++)
             args.push_back(request.params[i].get_str());
     }
-    std::string buf = call_rt_pure(&contractStateCache, contract_address, args);
+    ContractStateCache cache;
+    std::string buf = call_rt_pure(&cache, contract_address, args);
     UniValue uv;
     // const bool ok = uv.read(buf);
     uv.read(buf);
