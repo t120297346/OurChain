@@ -21,7 +21,7 @@ public:
     virtual bool UpdateSnapShot(ContractStateCache& cache, SnapShot& snapShot, CChain& chainActive, const Consensus::Params consensusParams) { return false; }
 };
 
-
+// 完全重建策略, 從頭開始重建合約狀態與快照
 class UpdateStrategyRebuild : public UpdateStrategy
 {
 public:
@@ -32,6 +32,7 @@ public:
     }
 };
 
+// 狀態相同時，不需要更新
 class UpdateStrategyUnDo : public UpdateStrategy
 {
 public:
@@ -42,6 +43,7 @@ public:
     }
 };
 
+// 繼續策略, 繼續從上一個合約狀態快照繼續更新
 class UpdateStrategyContinue : public UpdateStrategy
 {
 public:
@@ -52,6 +54,7 @@ public:
     }
 };
 
+// 回滾策略, 回到上一個合約狀態快照
 class UpdateStrategyRollback : public UpdateStrategy
 {
 public:
@@ -62,6 +65,7 @@ public:
     }
 };
 
+// 檢視鏈狀態和快照狀態，決定更新當前快照策略
 class UpdateStrategyFactory
 {
 public:

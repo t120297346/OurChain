@@ -21,15 +21,19 @@ private:
     {
         return GetDataDir() / "contracts" / "checkPoint" / name;
     }
-
+    // 清除該位置前一個快照並保存當前狀態快照到目標位置
     void clearAndSaveDuplicateState(fs::path path);
+    // 保存當前狀態快照到目標位置
     void saveDuplicateState(fs::path path);
 
 public:
+    // pre db operation status
     leveldb::Status getStatus();
+    // is pre db operation ok
     bool isOk();
-    // set critical save
+    // set critical save (directly write to disk)
     void setCriticalSave();
+    // get iterator, for custom operation on database
     leveldb::Iterator* getIterator();
     // connect contract DB
     ContractDBWrapper(std::string name);
@@ -52,6 +56,7 @@ public:
     void clearAllStates();
     // save contract checkPoint
     void saveCheckPoint(std::string tipBlockHash);
+    // save tmp state to fix file place, read only user will read it
     void saveTmpState();
     // find check point
     bool findCheckPoint(std::string tipBlockHash);

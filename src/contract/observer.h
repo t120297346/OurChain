@@ -12,6 +12,7 @@ class ContractObserver
 {
 public:
     ContractObserver(ContractStateCache* cache);
+    // 當區塊鏈狀態改變時觸發, 用於更新合約狀態快照
     bool onChainStateSet(CChain& chainActive, const Consensus::Params consensusParams);
 
 private:

@@ -16,7 +16,9 @@ public:
     void setContractState(uint256 address, json state);
     json getContractState(uint256 address);
     void clear();
+    // duplicate sanpshot to checkPoint folder
     void saveCheckPoint(std::string tipBlockHash);
+    // duplicate sanpshot to tmp folder
     void saveTmpState();
     bool isCheckPointExist(std::string tipBlockHash);
     ContractDBWrapper* getDBWrapper();
@@ -25,6 +27,7 @@ private:
     ContractDBWrapper* dbWrapper;
 };
 
+// 用來追蹤對合約模塊來說的當前區塊鏈狀態
 class BlockCache
 {
 public:
@@ -78,14 +81,21 @@ class ContractStateCache
 public:
     ContractStateCache();
     ~ContractStateCache();
+    // 當前合約快照
     SnapShot* getSnapShot();
     void clearSnapShot();
+    // 合約快照所追蹤的區塊鏈狀態(最高區塊高度)
     bool getFirstBlockCache(BlockCache::blockIndex& blockIndex);
     BlockCache* getBlockCache();
+    // 更新合約狀態追蹤的區塊鏈狀態
     void pushBlock(BlockCache::blockIndex blockIndex);
+    // 更新合約狀態追蹤的區塊鏈狀態
     void popBlock();
+    // 保存合約狀態快照(checkPoint)
     void saveCheckPoint();
+    // 保存合約狀態快照(tmp)
     void saveTmpState();
+    // 恢復合約狀態快照到目標 checkPoint
     bool restoreCheckPoint();
 
 private:
