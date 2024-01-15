@@ -18,6 +18,10 @@ public:
 private:
     ContractStateCache* cache;
     UpdateStrategyFactory updateStrategyFactory;
+
+    bool isSaveCheckPointNow(int height);
+    bool isSaveReadReplicaNow(int height);
+    bool isClearCheckPointNow(int height);
 };
 
 #endif // CONTRACT_OBSERVER_H

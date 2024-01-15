@@ -19,7 +19,7 @@ private:
     }
     fs::path getContractCheckPointPath(std::string name)
     {
-        return GetDataDir() / "contracts" / "checkPoint" / name;
+        return CheckPointPath / name;
     }
     // 清除該位置前一個快照並保存當前狀態快照到目標位置
     void clearAndSaveDuplicateState(fs::path path);
@@ -27,6 +27,7 @@ private:
     void saveDuplicateState(fs::path path);
 
 public:
+    const fs::path CheckPointPath = GetDataDir() / "contracts" / "checkPoint";
     // pre db operation status
     leveldb::Status getStatus();
     // is pre db operation ok

@@ -17,7 +17,40 @@ bool ContractObserver::onChainStateSet(CChain& chainActive, const Consensus::Par
         LogPrintf("snapshot: update\n");
         return false;
     }
-    cache->saveCheckPoint();
-    cache->saveTmpState();
+    auto curHeight = cache->getBlockCache()->getHeighestBlock().blockHeight;
+    if (isSaveCheckPointNow(curHeight)) {
+        cache->saveCheckPoint();
+    }
+    if (isSaveReadReplicaNow(curHeight)) {
+        cache->saveTmpState();
+    }
+    if (isClearCheckPointNow(curHeight)) {
+        cache->clearCheckPoint(100);
+    }
     return true;
+}
+
+bool ContractObserver::isSaveCheckPointNow(int height)
+{
+    if (height == 0)
+        return false;
+    if (height % 10 == 0)
+        return true;
+    return false;
+}
+
+bool ContractObserver::isSaveReadReplicaNow(int height)
+{
+    if (height % 2 == 0)
+        return true;
+    return false;
+}
+
+bool ContractObserver::isClearCheckPointNow(int height)
+{
+    if (height == 0)
+        return false;
+    if (height % 100 == 0)
+        return true;
+    return false;
 }

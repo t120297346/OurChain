@@ -97,26 +97,12 @@ public:
     void saveTmpState();
     // 恢復合約狀態快照到目標 checkPoint
     bool restoreCheckPoint();
+    // clear old checkPoint in checkPoint folder(保留幾個 block 內的 check point)
+    void clearCheckPoint(int maxCheckPointCount);
 
 private:
     BlockCache* blockCache;
     SnapShot* snapShot;
-
-    bool isSaveCheckPointNow(int height)
-    {
-        if (height == 0)
-            return false;
-        if (height % 10 == 0)
-            return true;
-        return false;
-    }
-
-    bool isSaveReadReplicaNow(int height)
-    {
-        if (height % 2 == 0)
-            return true;
-        return false;
-    }
 };
 
 #endif // CONTRACT_CACHE_H

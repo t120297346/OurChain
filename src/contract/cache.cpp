@@ -128,13 +128,11 @@ void ContractStateCache::saveCheckPoint()
     auto blockIndex = blockCache->getHeighestBlock();
     if (snapShot->isCheckPointExist(blockIndex.blockHash.ToString()))
         return;
-    if (isSaveCheckPointNow(blockIndex.blockHeight))
-        snapShot->saveCheckPoint(blockIndex.blockHash.ToString());
+    snapShot->saveCheckPoint(blockIndex.blockHash.ToString());
 }
 void ContractStateCache::saveTmpState()
 {
-    if (isSaveReadReplicaNow(blockCache->getHeighestBlock().blockHeight))
-        snapShot->saveTmpState();
+    snapShot->saveTmpState();
 }
 bool ContractStateCache::restoreCheckPoint()
 {
@@ -144,4 +142,42 @@ bool ContractStateCache::restoreCheckPoint()
         return true;
     }
     return false;
+}
+void ContractStateCache::clearCheckPoint(int maxBlockCheckPointCount)
+{
+    // record recent block hash
+    std::vector<std::string> recentBlockHash;
+    // get recent block hash
+    {
+        auto curHeight = blockCache->getHeighestBlock().blockHeight;
+        for (int i = 0; i < maxBlockCheckPointCount; i++) {
+            auto blockHash = blockCache->getBlockHash(curHeight);
+            if (blockHash.IsNull())
+                break;
+            recentBlockHash.push_back(blockHash.ToString());
+            curHeight--;
+        }
+    }
+    // get check point folder path
+    fs::path checkPointPath = snapShot->getDBWrapper()->CheckPointPath;
+    // iterate all checkPoint in folder
+    for (auto& p : fs::directory_iterator(checkPointPath)) {
+        if (!fs::is_directory(p))
+            continue;
+        // get checkPoint file path
+        fs::path checkPointFilePath = p.path();
+        // get checkPoint file name
+        std::string checkPointFileName = checkPointFilePath.filename().string();
+        // check if checkPoint file name is in recent block hash
+        auto isShouldRemove = true;
+        for (auto& blockHash : recentBlockHash) {
+            if (blockHash == checkPointFileName) {
+                isShouldRemove = false;
+                break;
+            }
+        }
+        if (isShouldRemove) {
+            fs::remove_all(checkPointFilePath);
+        }
+    }
 }
