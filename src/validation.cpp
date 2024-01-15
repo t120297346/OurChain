@@ -1135,32 +1135,6 @@ void static InvalidBlockFound(CBlockIndex* pindex, const CValidationState& state
     }
 }
 
-CTransactionRef ProcessContractTx(const Contract& cont, CCoinsViewCache& inputs, std::vector<Contract>& nextContract, const CTransaction &curTx)
-{
-    if (cont.action == 0) return CTransactionRef();
-    CMutableTransaction mtx;
-    ContState cs;
-    CAmount balance = 0;
-    inputs.GetContState(cont.address, cs);
-    for (const COutPoint& outpoint : cs.coins) {
-        mtx.vin.push_back(CTxIn(outpoint));
-        balance += inputs.AccessCoin(outpoint).out.nValue;
-    }
-
-    if (!ProcessContract(cont, mtx.vout, cs.state, balance, nextContract, curTx)) return CTransactionRef();
-    // update cont state
-    cs.coins.clear();
-    inputs.AddContState(cont.address, std::move(cs));
-    if (mtx.vin.size() == 0) return CTransactionRef();
-    // add the change
-    CAmount amount = 0;
-    for (const CTxOut& txout : mtx.vout)
-        amount += txout.nValue;
-    assert(amount <= balance);
-    if (amount < balance)
-        mtx.vout.push_back(CTxOut(balance - amount, GetScriptForContract(cont.address)));
-    return MakeTransactionRef(mtx);
-}
 
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo& txundo, int nHeight)
 {
@@ -1786,24 +1760,6 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
         }
         UpdateCoins(tx, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
 
-        std::queue<Contract> contractQueue;
-        if (tx.contract.action != ACTION_NONE)
-            contractQueue.push(tx.contract);
-        while (!contractQueue.empty()) {
-            Contract cur = std::move(contractQueue.front());
-            contractQueue.pop();
-
-            std::vector<Contract> contractCall;
-            CTransactionRef ptx = ProcessContractTx(cur, view, contractCall, tx);
-            if (ptx) {
-                block.vvtx.push_back(ptx);
-                blockundo.vtxundo.push_back(CTxUndo());
-                UpdateCoins(*ptx, view, blockundo.vtxundo.back(), pindex->nHeight);
-                for (Contract& nextContract : contractCall) {
-                    contractQueue.push(std::move(nextContract));
-                }
-            }
-        }
 
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
@@ -2504,6 +2460,17 @@ bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams,
     // Write changes periodically to disk, after relay.
     if (!FlushStateToDisk(chainparams, state, FLUSH_STATE_PERIODIC)) {
         return false;
+    }
+
+    {
+        LOCK(cs_main);
+        ContractStateCache contractStateCache;
+        ContractObserver observer(&contractStateCache);
+        if (!observer.onChainStateSet(chainActive, chainparams.GetConsensus())) {
+            return false;
+        }
+        // should be called after onChainStateSet
+        LogPrintf("ActivateBestChain\n");
     }
 
     return true;

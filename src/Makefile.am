@@ -105,6 +105,10 @@ BITCOIN_CORE_H = \
   consensus/consensus.h \
   consensus/tx_verify.h \
   contract/processing.h \
+  contract/cache.h \
+  contract/dbWrapper.h \
+  contract/observer.h \
+  contract/updateStrategy.h \
   core_io.h \
   core_memusage.h \
   cuckoocache.h \
@@ -199,6 +203,10 @@ libbitcoin_server_a_SOURCES = \
   checkpoints.cpp \
   consensus/tx_verify.cpp \
   contract/processing.cpp \
+  contract/cache.cpp \
+  contract/dbWrapper.cpp \
+  contract/observer.cpp \
+  contract/updateStrategy.cpp \
   httprpc.cpp \
   httpserver.cpp \
   init.cpp \
@@ -240,7 +248,6 @@ libbitcoin_zmq_a_SOURCES = \
   zmq/zmqpublishnotifier.cpp
 endif
 
-
 # wallet: shared between bitcoind and bitcoin-qt, but only linked
 # when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -253,6 +260,11 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/rpcwallet.cpp \
   wallet/wallet.cpp \
   wallet/walletdb.cpp \
+  contract/processing.cpp \
+  contract/updateStrategy.cpp \
+  contract/observer.cpp \
+  contract/dbWrapper.cpp \
+  contract/cache.cpp \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library

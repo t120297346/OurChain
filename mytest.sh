@@ -12,6 +12,6 @@ rm log.txt
 echo "Contract Address: $contract_address"
 # 使用合同地址调用合同
 ./src/bitcoin-cli callcontract "$contract_address" ""
-./src/bitcoin-cli generate 1
+./src/bitcoin-cli generate 5
 ./src/bitcoin-cli dumpcontractmessage "$contract_address" ""
 ./src/bitcoin-cli stop

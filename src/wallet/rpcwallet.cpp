@@ -7,7 +7,6 @@
 #include "base58.h"
 #include "chain.h"
 #include "consensus/validation.h"
-#include "contract/contract.h"
 #include "contract/processing.h"
 #include "core_io.h"
 #include "httpserver.h"
@@ -1982,7 +1981,7 @@ UniValue gettransaction(const JSONRPCRequest& request)
         entry.push_back(Pair("contract_callee", wtx.tx->contract.address.GetHex()));
         entry.push_back(Pair("contract_args_size", (uint64_t)(wtx.tx->contract.args.size())));
         std::string argvs = "";
-        for (int i = 0; i < wtx.tx->contract.args.size(); i++) {
+        for (unsigned int i = 0; i < wtx.tx->contract.args.size(); i++) {
             argvs += wtx.tx->contract.args[i] + " ";
         }
         entry.push_back(Pair("contract_args", argvs));
@@ -3112,7 +3111,7 @@ UniValue generate(const JSONRPCRequest& request)
 
 static void SendContractTx(CWallet* const pwallet, const Contract* contract, const CTxDestination& address, CWalletTx& wtxNew, const CCoinControl& coin_control)
 {
-    CAmount curBalance = pwallet->GetBalance();
+    // CAmount curBalance = pwallet->GetBalance();
 
     if (pwallet->GetBroadcastTransactions() && !g_connman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -3140,30 +3139,14 @@ static void SendContractTx(CWallet* const pwallet, const Contract* contract, con
 
 static bool ReadFile(const std::string& filename, std::string& buf)
 {
-    if ((filename.find("http") < filename.length()) && (filename.find("http") >= 0)) {
-        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.cpp";
-        system(command.c_str());
+    std::string line;
+    std::ifstream file(filename);
 
-        std::string line;
-        std::ifstream file(GetDataDir().string() + "/code.cpp");
-        if (file.is_open() == false) return false;
-        while (getline(file, line))
-            buf += (line + "\n");
-        file.close();
-
-        command = "rm " + GetDataDir().string() + "/code.cpp";
-        system(command.c_str());
-        return true;
-    } else {
-        std::string line;
-        std::ifstream file(filename);
-
-        if (file.is_open() == false) return false;
-        while (getline(file, line))
-            buf += (line + "\n");
-        file.close();
-        return true;
-    }
+    if (file.is_open() == false) return false;
+    while (getline(file, line))
+        buf += (line + "\n");
+    file.close();
+    return true;
 }
 
 UniValue deploycontract(const JSONRPCRequest& request)
@@ -3312,9 +3295,11 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
         for (unsigned i = 1; i < request.params.size(); i++)
             args.push_back(request.params[i].get_str());
     }
-    std::string buf = call_rt_pure(contract_address, args);
+    auto cache = ContractDBWrapper("tmp");
+    std::string buf = call_rt_pure(&cache, contract_address, args);
     UniValue uv;
-    const bool ok = uv.read(buf);
+    // const bool ok = uv.read(buf);
+    uv.read(buf);
     // assert(ok); // when contract exe error, it will not OK, but it should still run
     return uv;
 }
