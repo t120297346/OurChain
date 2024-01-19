@@ -41,9 +41,7 @@ bool ContractObserver::isSaveCheckPointNow(int height)
 
 bool ContractObserver::isSaveReadReplicaNow(int height)
 {
-    if (height % 2 == 0)
-        return true;
-    return false;
+    return true;
 }
 
 bool ContractObserver::isClearCheckPointNow(int height)
