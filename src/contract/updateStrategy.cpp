@@ -8,7 +8,7 @@ static bool processContracts(std::stack<CBlock*> realBlock, ContractStateCache& 
         realBlock.pop();
         for (const CTransactionRef& tx : tmpBlock->vtx) {
             if (!ProcessContract(tx.get()->contract, tx, &cache)) {
-                return false;
+                LogPrintf("contract process error: %s\n", tx.get()->contract.address.ToString());
             }
         }
         delete tmpBlock;
