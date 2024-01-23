@@ -51,6 +51,10 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+#ifdef ENABLE_GPoW
+        READWRITE(nPrecisionTime);
+        READWRITE(hashGPoW);
+#endif
     }
 
     void SetNull()
