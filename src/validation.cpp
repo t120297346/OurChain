@@ -50,6 +50,12 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 
+#ifdef ENABLE_GPoW
+    #include "gpow.h"
+    #include "GNonces.h"
+    #include "OurChain/gpowserver.h"
+#endif
+
 #if defined(NDEBUG)
 #error "Bitcoin cannot be compiled without assertions."
 #endif
@@ -102,14 +108,41 @@ namespace
 struct CBlockIndexWorkComparator {
     bool operator()(const CBlockIndex* pa, const CBlockIndex* pb) const
     {
-        // First sort by most total work, ...
-        if (pa->nChainWork > pb->nChainWork) return false;
-        if (pa->nChainWork < pb->nChainWork) return true;
+#ifdef ENABLE_GPoW
+            // First sort by most total work, ...
+            //LogPrintf("Check nChainWork: pa->%s, pb->%s\n", ArithToUint256(pa->nChainWork).ToString().c_str(), ArithToUint256(pb->nChainWork).ToString().c_str());
+            if (pa->nChainWork > pb->nChainWork) return false;
+            if (pa->nChainWork < pb->nChainWork) return true;
 
-        // ... then by earliest time received, ...
-        if (pa->nSequenceId < pb->nSequenceId) return false;
-        if (pa->nSequenceId > pb->nSequenceId) return true;
+            if (pa->GetBlockTime() < pb->GetBlockTime()) return false;
+            if (pa->GetBlockTime() > pb->GetBlockTime()) return true;
 
+            if (pa->GetPrecisionBlockTime() < pb->GetPrecisionBlockTime()) {
+            if (pb->GetPrecisionBlockTime() - pa->GetPrecisionBlockTime() > TIME_ERROR) // more than time error
+                return false;
+            }
+            if (pa->GetPrecisionBlockTime() > pb->GetPrecisionBlockTime()) {
+                if (pa->GetPrecisionBlockTime() - pb->GetPrecisionBlockTime() > TIME_ERROR) // more than time error
+                    return true;
+            }
+
+            // ... Compare GPoW, Smaller GPoW win ...
+            CBlockHeader ba, bb;
+            ba = pa->GetBlockHeader();
+            bb = pb->GetBlockHeader();
+            if (UintToArith256(ba.hashGPoW) < UintToArith256(bb.hashGPoW)) return false;
+            if (UintToArith256(ba.hashGPoW) > UintToArith256(bb.hashGPoW)) return true;
+            
+#else
+            // First sort by most total work, ...
+            if (pa->nChainWork > pb->nChainWork) return false;
+            if (pa->nChainWork < pb->nChainWork) return true;
+
+            // ... then by earliest time received, ...
+            if (pa->nSequenceId < pb->nSequenceId) return false;
+            if (pa->nSequenceId > pb->nSequenceId) return true;
+
+#endif //ENABLE_GPoW
         // Use pointer address as tie breaker (should only happen with blocks
         // loaded from disk, as those all have id 0).
         if (pa < pb) return false;
@@ -2756,7 +2789,11 @@ static bool FindUndoPos(CValidationState& state, int nFile, CDiskBlockPos& pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
+#ifdef ENABLE_GPoW
+    if (fCheckPOW && !CheckProofOfWork(block.hashGPoW, block.nBits, consensusParams))
+#else
     if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+#endif
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 
     return true;
@@ -3170,6 +3207,9 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
             return error("%s: AcceptBlock FAILED", __func__);
         }
     }
+#ifdef ENABLE_GPoW
+    InterruptMining();
+#endif
 
     NotifyHeaderTip();
 

@@ -50,6 +50,10 @@
 #include <stdio.h>
 #include <memory>
 
+#ifdef ENABLE_GPoW
+    #include "OurChain/gpowserver.h"
+#endif
+
 #ifndef WIN32
 #include <signal.h>
 #endif
@@ -718,6 +722,14 @@ bool InitSanityCheck(void)
 
 bool AppInitServers(boost::thread_group& threadGroup)
 {
+#ifdef ENABLE_GPoW    
+    if (!InitGPoWServer()) {
+        LogPrintf("GPoW server failed\n");
+        return false;
+    }
+    if (!StartGPoWServer())
+        return false;
+#endif
     RPCServer::OnStarted(&OnRPCStarted);
     RPCServer::OnStopped(&OnRPCStopped);
     RPCServer::OnPreCommand(&OnRPCPreCommand);

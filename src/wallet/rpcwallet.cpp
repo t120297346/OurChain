@@ -3079,7 +3079,12 @@ UniValue generate(const JSONRPCRequest& request)
             "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
+#ifdef ENABLE_GPoW
+            "2. Conservative    (boolean, optional) Whether conservative or not(default = 1)\n"
+            "3. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
+#else
             "2. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
+#endif
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
@@ -3089,9 +3094,19 @@ UniValue generate(const JSONRPCRequest& request)
 
     int num_generate = request.params[0].get_int();
     uint64_t max_tries = 1000000;
+#ifdef ENABLE_GPoW
+    bool conservative = true;
+    if (request.params.size() > 1 && !request.params[1].isNull()) {
+        conservative = request.params[1].get_bool();
+    }
+    if (request.params.size() > 2 && !request.params[2].isNull()) {
+        max_tries = request.params[2].get_int();
+    }
+#else
     if (request.params.size() > 1 && !request.params[1].isNull()) {
         max_tries = request.params[1].get_int();
     }
+#endif
 
     std::shared_ptr<CReserveScript> coinbase_script;
     pwallet->GetScriptForMining(coinbase_script);
@@ -3106,7 +3121,11 @@ UniValue generate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available");
     }
 
+#ifdef ENABLE_GPoW
+    return generateBlocks(coinbase_script, num_generate, max_tries, true, conservative);
+#else
     return generateBlocks(coinbase_script, num_generate, max_tries, true);
+#endif
 }
 
 static void SendContractTx(CWallet* const pwallet, const Contract* contract, const CTxDestination& address, CWalletTx& wtxNew, const CCoinControl& coin_control)

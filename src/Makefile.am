@@ -31,6 +31,7 @@ LIBBITCOIN_CLI=libbitcoin_cli.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO=crypto/libbitcoin_crypto.a
 LIBBITCOINQT=qt/libbitcoinqt.a
+LIBGPOW=OurChain/libgpow.a
 LIBSECP256K1=secp256k1/libsecp256k1.la
 LIBOURCONTRACT=contract/libourcontract.la
 
@@ -57,7 +58,8 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_ZMQ)
+  $(LIBBITCOIN_ZMQ) \
+  $(LIBGPOW)
 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS) $(LIBOURCONTRACT)
 
@@ -130,6 +132,7 @@ BITCOIN_CORE_H = \
   netbase.h \
   netmessagemaker.h \
   noui.h \
+  OurChain/gpowserver.h \
   policy/feerate.h \
   policy/fees.h \
   policy/policy.h \
@@ -216,6 +219,7 @@ libbitcoin_server_a_SOURCES = \
   net.cpp \
   net_processing.cpp \
   noui.cpp \
+  OurChain/gpowserver.cpp \
   policy/fees.cpp \
   policy/policy.cpp \
   policy/rbf.cpp \
@@ -389,6 +393,16 @@ contract_libourcontract_la_SOURCES = \
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
 
+# GPoW library
+OurChain_libgpow_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+OurChain_libgpow_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+OurChain_libgpow_a_SOURCES = \
+  gpow.cpp \
+  gpow.h
+OurChain_libgpow_a_LIBADD = $(GMP_LIBS)
+OurChain_libgpow_a_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+#
+
 # cli: shared between bitcoin-cli and bitcoin-qt
 libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -416,6 +430,7 @@ bitcoind_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_ZMQ) \
+  $(LIBGPOW) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBLEVELDB) \
@@ -458,11 +473,12 @@ bitcoin_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
+  $(LIBGPOW) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(GMP_LIBS)
 #
 
 # ourcontract-rt binary #
