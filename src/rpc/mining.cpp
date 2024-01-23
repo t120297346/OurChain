@@ -143,7 +143,6 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             pblocktemplate = BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript);
             if (!pblocktemplate.get())
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
-            int64_t diff_time = GetAdjustedTime() - chainActive.Tip()->nTime;
 
             pblock = &pblocktemplate->block;
             {

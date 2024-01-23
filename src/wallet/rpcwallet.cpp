@@ -115,7 +115,7 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
     }
     entry.push_back(Pair("bip125-replaceable", rbfStatus));
 
-    for (const std::pair<std::string, std::string>& item : wtx.mapValue)
+    for (const std::pair<std::string, std::string> item : wtx.mapValue)
         entry.push_back(Pair(item.first, item.second));
 }
 
@@ -351,7 +351,7 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
 
     // Find all addresses that have the given account
     UniValue ret(UniValue::VARR);
-    for (const std::pair<CBitcoinAddress, CAddressBookData>& item : pwallet->mapAddressBook) {
+    for (const std::pair<CBitcoinAddress, CAddressBookData> item : pwallet->mapAddressBook) {
         const CBitcoinAddress& address = item.first;
         const std::string& strName = item.second.name;
         if (strName == strAccount)
@@ -702,7 +702,7 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     // Tally
     CAmount nAmount = 0;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<uint256, CWalletTx> pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
             continue;
@@ -754,7 +754,7 @@ UniValue getreceivedbyaccount(const JSONRPCRequest& request)
 
     // Tally
     CAmount nAmount = 0;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<uint256, CWalletTx> pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
             continue;
@@ -1285,7 +1285,7 @@ UniValue ListReceived(CWallet* const pwallet, const UniValue& params, bool fByAc
 
     // Tally
     std::map<CBitcoinAddress, tallyitem> mapTally;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<uint256, CWalletTx> pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
 
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
@@ -1316,7 +1316,7 @@ UniValue ListReceived(CWallet* const pwallet, const UniValue& params, bool fByAc
     // Reply
     UniValue ret(UniValue::VARR);
     std::map<std::string, tallyitem> mapAccountTally;
-    for (const std::pair<CBitcoinAddress, CAddressBookData>& item : pwallet->mapAddressBook) {
+    for (const std::pair<CBitcoinAddress, CAddressBookData> item : pwallet->mapAddressBook) {
         const CBitcoinAddress& address = item.first;
         const std::string& strAccount = item.second.name;
         std::map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
@@ -1724,13 +1724,13 @@ UniValue listaccounts(const JSONRPCRequest& request)
             includeWatchonly = includeWatchonly | ISMINE_WATCH_ONLY;
 
     std::map<std::string, CAmount> mapAccountBalances;
-    for (const std::pair<CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
+    for (const std::pair<CTxDestination, CAddressBookData> entry : pwallet->mapAddressBook) {
         if (IsMine(*pwallet, entry.first) & includeWatchonly) { // This address belongs to me
             mapAccountBalances[entry.second.name] = 0;
         }
     }
 
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<uint256, CWalletTx> pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         CAmount nFee;
         std::string strSentAccount;
@@ -1757,7 +1757,7 @@ UniValue listaccounts(const JSONRPCRequest& request)
         mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
 
     UniValue ret(UniValue::VOBJ);
-    for (const std::pair<std::string, CAmount>& accountBalance : mapAccountBalances) {
+    for (const std::pair<std::string, CAmount> accountBalance : mapAccountBalances) {
         ret.push_back(Pair(accountBalance.first, ValueFromAmount(accountBalance.second)));
     }
     return ret;
@@ -1859,7 +1859,7 @@ UniValue listsinceblock(const JSONRPCRequest& request)
 
     UniValue transactions(UniValue::VARR);
 
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<uint256, CWalletTx> pairWtx : pwallet->mapWallet) {
         CWalletTx tx = pairWtx.second;
 
         if (depth == -1 || tx.GetDepthInMainChain() < depth) {
@@ -3130,8 +3130,6 @@ UniValue generate(const JSONRPCRequest& request)
 
 static void SendContractTx(CWallet* const pwallet, const Contract* contract, const CTxDestination& address, CWalletTx& wtxNew, const CCoinControl& coin_control)
 {
-    // CAmount curBalance = pwallet->GetBalance();
-
     if (pwallet->GetBroadcastTransactions() && !g_connman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
@@ -3158,14 +3156,37 @@ static void SendContractTx(CWallet* const pwallet, const Contract* contract, con
 
 static bool ReadFile(const std::string& filename, std::string& buf)
 {
-    std::string line;
-    std::ifstream file(filename);
+    if(filename.find("http") != std::string::npos){
+        std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.cpp";
+        if(system(command.c_str()) == -1) {
+            std::string strError;
+            strError = strprintf("Error: wget command error");
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
+        }
 
-    if (file.is_open() == false) return false;
-    while (getline(file, line))
-        buf += (line + "\n");
-    file.close();
-    return true;
+        std::string line;
+        std::ifstream file(GetDataDir().string() + "/code.cpp");
+        if (file.is_open() == false) return false;
+        while (getline(file, line)) buf += (line + "\n");
+        file.close();
+
+        command = "rm " + GetDataDir().string() + "/code.cpp";
+        if(system(command.c_str()) == -1) {
+            std::string strError;
+            strError = strprintf("Error: rm command error");
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
+        }
+        return true;
+    }
+    else {
+        std::string line;
+        std::ifstream file(filename);
+
+        if (file.is_open() == false) return false;
+        while (getline(file, line)) buf += (line + "\n");
+        file.close();
+        return true;
+    }
 }
 
 UniValue deploycontract(const JSONRPCRequest& request)

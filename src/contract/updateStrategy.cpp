@@ -1,5 +1,7 @@
 #include "contract/updateStrategy.h"
 #include "contract/processing.h"
+#include <stack>
+
 
 static bool processContracts(std::stack<CBlock*> realBlock, ContractStateCache& cache)
 {
