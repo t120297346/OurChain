@@ -50,6 +50,10 @@
 #include <stdio.h>
 #include <memory>
 
+#ifdef ENABLE_GPoW
+    #include "OurChain/gpowserver.h"
+#endif
+
 #ifndef WIN32
 #include <signal.h>
 #endif
@@ -613,7 +617,7 @@ void CleanupBlockRevFiles()
     // keeping a separate counter.  Once we hit a gap (or if 0 doesn't exist)
     // start removing block files.
     int nContigCounter = 0;
-    for (const std::pair<std::string, fs::path>& item : mapBlockFiles) {
+    for (const std::pair<std::string, fs::path> item : mapBlockFiles) {
         if (atoi(item.first) == nContigCounter) {
             nContigCounter++;
             continue;
@@ -718,6 +722,14 @@ bool InitSanityCheck(void)
 
 bool AppInitServers(boost::thread_group& threadGroup)
 {
+#ifdef ENABLE_GPoW    
+    if (!InitGPoWServer()) {
+        LogPrintf("GPoW server failed\n");
+        return false;
+    }
+    if (!StartGPoWServer())
+        return false;
+#endif
     RPCServer::OnStarted(&OnRPCStarted);
     RPCServer::OnStopped(&OnRPCStopped);
     RPCServer::OnPreCommand(&OnRPCPreCommand);

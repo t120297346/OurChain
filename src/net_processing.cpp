@@ -31,6 +31,10 @@
 #include "utilstrencodings.h"
 #include "validationinterface.h"
 
+#ifdef ENABLE_GPoW
+    #include "OurChain/gpowserver.h"
+#endif
+
 #if defined(NDEBUG)
 # error "Bitcoin cannot be compiled without assertions."
 #endif
@@ -2256,6 +2260,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // Nothing interesting. Stop asking this peers for more headers.
             return true;
         }
+
+#ifdef ENABLE_GPoW
+        // Not sure, maybe need to move to other place
+        if (IsCurrentRoundBlock(headers[0]) && !fAllowedMining) {
+            // First round expired, cannot receive new block
+            return true;
+        }
+#endif
 
         const CBlockIndex *pindexLast = nullptr;
         {

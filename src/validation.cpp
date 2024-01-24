@@ -50,6 +50,12 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 
+#ifdef ENABLE_GPoW
+    #include "gpow.h"
+    #include "GNonces.h"
+    #include "OurChain/gpowserver.h"
+#endif
+
 #if defined(NDEBUG)
 #error "Bitcoin cannot be compiled without assertions."
 #endif
@@ -102,14 +108,41 @@ namespace
 struct CBlockIndexWorkComparator {
     bool operator()(const CBlockIndex* pa, const CBlockIndex* pb) const
     {
-        // First sort by most total work, ...
-        if (pa->nChainWork > pb->nChainWork) return false;
-        if (pa->nChainWork < pb->nChainWork) return true;
+#ifdef ENABLE_GPoW
+            // First sort by most total work, ...
+            //LogPrintf("Check nChainWork: pa->%s, pb->%s\n", ArithToUint256(pa->nChainWork).ToString().c_str(), ArithToUint256(pb->nChainWork).ToString().c_str());
+            if (pa->nChainWork > pb->nChainWork) return false;
+            if (pa->nChainWork < pb->nChainWork) return true;
 
-        // ... then by earliest time received, ...
-        if (pa->nSequenceId < pb->nSequenceId) return false;
-        if (pa->nSequenceId > pb->nSequenceId) return true;
+            if (pa->GetBlockTime() < pb->GetBlockTime()) return false;
+            if (pa->GetBlockTime() > pb->GetBlockTime()) return true;
 
+            if (pa->GetPrecisionBlockTime() < pb->GetPrecisionBlockTime()) {
+            if (pb->GetPrecisionBlockTime() - pa->GetPrecisionBlockTime() > TIME_ERROR) // more than time error
+                return false;
+            }
+            if (pa->GetPrecisionBlockTime() > pb->GetPrecisionBlockTime()) {
+                if (pa->GetPrecisionBlockTime() - pb->GetPrecisionBlockTime() > TIME_ERROR) // more than time error
+                    return true;
+            }
+
+            // ... Compare GPoW, Smaller GPoW win ...
+            CBlockHeader ba, bb;
+            ba = pa->GetBlockHeader();
+            bb = pb->GetBlockHeader();
+            if (UintToArith256(ba.hashGPoW) < UintToArith256(bb.hashGPoW)) return false;
+            if (UintToArith256(ba.hashGPoW) > UintToArith256(bb.hashGPoW)) return true;
+            
+#else
+            // First sort by most total work, ...
+            if (pa->nChainWork > pb->nChainWork) return false;
+            if (pa->nChainWork < pb->nChainWork) return true;
+
+            // ... then by earliest time received, ...
+            if (pa->nSequenceId < pb->nSequenceId) return false;
+            if (pa->nSequenceId > pb->nSequenceId) return true;
+
+#endif //ENABLE_GPoW
         // Use pointer address as tie breaker (should only happen with blocks
         // loaded from disk, as those all have id 0).
         if (pa < pb) return false;
@@ -525,7 +558,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             view.SetBackend(viewMemPool);
 
             // do all inputs exist?
-            for (const CTxIn txin : tx.vin) {
+            for (const CTxIn& txin : tx.vin) {
                 if (!pcoinsTip->HaveCoinInCache(txin.prevout)) {
                     coins_to_uncache.push_back(txin.prevout);
                 }
@@ -2349,20 +2382,20 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
             }
         }
     }
-
+    
     if (fBlocksDisconnected) {
         // If any blocks were disconnected, disconnectpool may be non empty.  Add
         // any disconnected transactions back to the mempool.
         UpdateMempoolForReorg(disconnectpool, true);
     }
     mempool.check(pcoinsTip);
-
+    
     // Callbacks/notifications for a new best chain.
     if (fInvalidFound)
         CheckForkWarningConditionsOnNewFork(vpindexToConnect.back());
     else
         CheckForkWarningConditions();
-
+    
     return true;
 }
 
@@ -2399,7 +2432,6 @@ bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams,
     // far from a guarantee. Things in the P2P/RPC will often end up calling
     // us in the middle of ProcessNewBlock - do not assume pblock is set
     // sanely for performance or correctness!
-
     CBlockIndex* pindexMostWork = nullptr;
     CBlockIndex* pindexNewTip = nullptr;
     int nStopAtHeight = gArgs.GetArg("-stopatheight", DEFAULT_STOPATHEIGHT);
@@ -2756,7 +2788,11 @@ static bool FindUndoPos(CValidationState& state, int nFile, CDiskBlockPos& pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
+#ifdef ENABLE_GPoW
+    if (fCheckPOW && !CheckProofOfWork(block.hashGPoW, block.nBits, consensusParams))
+#else
     if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+#endif
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 
     return true;
@@ -3170,6 +3206,9 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
             return error("%s: AcceptBlock FAILED", __func__);
         }
     }
+#ifdef ENABLE_GPoW
+    InterruptMining();
+#endif
 
     NotifyHeaderTip();
 
@@ -3432,7 +3471,7 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
     // Calculate nChainWork
     std::vector<std::pair<int, CBlockIndex*>> vSortedByHeight;
     vSortedByHeight.reserve(mapBlockIndex.size());
-    for (const std::pair<uint256, CBlockIndex*>& item : mapBlockIndex) {
+    for (const std::pair<uint256, CBlockIndex*> item : mapBlockIndex) {
         CBlockIndex* pindex = item.second;
         vSortedByHeight.push_back(std::make_pair(pindex->nHeight, pindex));
     }
@@ -3485,7 +3524,7 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
     // Check presence of blk files
     LogPrintf("Checking all blk files are present...\n");
     std::set<int> setBlkDataFiles;
-    for (const std::pair<uint256, CBlockIndex*>& item : mapBlockIndex) {
+    for (const std::pair<uint256, CBlockIndex*> item : mapBlockIndex) {
         CBlockIndex* pindex = item.second;
         if (pindex->nStatus & BLOCK_HAVE_DATA) {
             setBlkDataFiles.insert(pindex->nFile);
