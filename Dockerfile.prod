@@ -1,10 +1,10 @@
-FROM ubuntu:22.04
+FROM debian:stable-slim
 
 # update package manager
 RUN apt-get update -y
 
 # install dev tools (not necessary for production)
-RUN apt-get install vim gdb -y
+# RUN apt-get install vim gdb -y
 
 # git clone ourchain
 RUN apt-get install git -y
@@ -41,4 +41,4 @@ RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=
 RUN make -j8 && make install && ldconfig
 
 # run (only for production)
-# ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]
+ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]
