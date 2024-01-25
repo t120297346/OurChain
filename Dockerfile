@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 # update package manager
 RUN apt-get update -y
 
-# install dev tools (not necessary for production)
+# install dev tools (only for development)
 RUN apt-get install vim gdb -y
 
 # git clone ourchain
@@ -18,6 +18,9 @@ WORKDIR /root/Desktop/ourchain
 RUN apt-get install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 -y
 RUN apt-get install libevent-dev libboost-all-dev libssl-dev libdb++-dev -y
 RUN apt-get install autoconf automake -y
+
+# install redundant dependencies (only for development)
+RUN apt-get install software-properties-common -y
 
 # install bitcoin optional dependencies
 RUN apt-get install libzmq3-dev -y
@@ -39,6 +42,3 @@ RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=
 
 # compile
 RUN make -j8 && make install && ldconfig
-
-# run (only for production)
-# ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]

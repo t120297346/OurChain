@@ -3,9 +3,6 @@ FROM debian:stable-slim
 # update package manager
 RUN apt-get update -y
 
-# install dev tools (not necessary for production)
-# RUN apt-get install vim gdb -y
-
 # git clone ourchain
 RUN apt-get install git -y
 ARG REPO_URL=https://github.com/leon123858/OurChain.git
