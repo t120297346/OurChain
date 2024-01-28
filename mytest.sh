@@ -1,7 +1,7 @@
 make -j8 && make install && ldconfig
 ./src/bitcoind --regtest --daemon -txindex
 sleep 5
-./src/bitcoin-cli generate 101
+./src/bitcoin-cli generate 11
 sleep 5
 ./src/bitcoin-cli deploycontract ~/Desktop/ourchain/sample.cpp > log.txt
 ./src/bitcoin-cli generate 1
@@ -12,6 +12,6 @@ rm log.txt
 echo "Contract Address: $contract_address"
 # 使用合同地址调用合同
 ./src/bitcoin-cli callcontract "$contract_address" ""
-./src/bitcoin-cli generate 5
+./src/bitcoin-cli generate 2
 ./src/bitcoin-cli dumpcontractmessage "$contract_address" ""
 ./src/bitcoin-cli stop
