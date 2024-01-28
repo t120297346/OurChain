@@ -96,7 +96,7 @@ std::string* physical_state_read(const char* contractAddress)
         err_printf("state_read: read data error\n");
         return nullptr;
     }
-    std::string* str = new std::string(buf);
+    std::string* str = new std::string(buf, buf_size);
     return str;
 }
 
