@@ -108,7 +108,7 @@ int physical_state_write(const std::string* buf)
         err_printf("state_write: write control code error\n");
         return -1;
     }
-    size_t buf_size = sizeof(char) * (buf->length());
+    size_t buf_size = buf->size();
     ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
     if (ret <= 0) {
         err_printf("state_write: write size error\n");
