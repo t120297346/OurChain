@@ -100,8 +100,9 @@ static void write_state_to_cache(ContractStateCache* cache, std::string& hex_cti
 {
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
+    std::string tmp_str(tmp, size);
     assert(ret >= 0);
-    cache->getSnapShot()->setContractState(uint256S(hex_ctid), json::parse(tmp));
+    cache->getSnapShot()->setContractState(uint256S(hex_ctid), json::parse(tmp_str));
     free(tmp);
 }
 
@@ -121,7 +122,7 @@ static std::string write_state_as_string(std::string& hex_ctid, int& size, FILE*
     char* tmp = (char*)malloc(size);
     int ret = fread(tmp, 1, size, pipe_state_read);
     assert(ret >= 0);
-    return std::string(tmp);
+    return std::string(tmp, size);
 }
 
 static int call_mkdll(const uint256& contract)

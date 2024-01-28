@@ -108,13 +108,15 @@ int physical_state_write(const std::string* buf)
         err_printf("state_write: write control code error\n");
         return -1;
     }
-    size_t buf_size = buf->size();
+    fflush(out);
+    int buf_size = buf->size();
     ret = fwrite((void*)&buf_size, sizeof(int), 1, out);
     if (ret <= 0) {
         err_printf("state_write: write size error\n");
         return -1;
     }
-    ret = fwrite((void*)buf->c_str(), buf_size, 1, out);
+    fflush(out);
+    ret = fwrite((void*)buf->data(), buf->size(), 1, out);
     if (ret <= 0) {
         err_printf("state_write: write buffer error\n");
         return -1;
