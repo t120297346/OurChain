@@ -41,13 +41,56 @@ enum Command
 
 static std::unordered_map<std::string, Command> const string2Command = {{"login", Command::login}, {"verify", Command::verify}, {"registerNewUser", Command::registerNewUser}, {"getCoins", Command::getCoins}, {"setCoin", Command::setCoin}, {"removeCoin", Command::removeCoin}};
 
+/**
+ * data structure
+ */
+
+struct user
+{
+    std::string aid;
+    std::string name;
+    std::string password;
+    std::vector<std::string> coins;
+};
+
+struct group
+{
+    std::vector<user> users;
+};
+
+void to_json(json &j, const user &p)
+{
+    j = json{{"aid", p.aid}, {"name", p.name}, {"password", p.password}, {"coins", p.coins}};
+}
+
+void from_json(const json &j, user &p)
+{
+    j.at("aid").get_to(p.aid);
+    j.at("name").get_to(p.name);
+    j.at("password").get_to(p.password);
+    j.at("coins").get_to(p.coins);
+}
+
+void to_json(json &j, const group &p)
+{
+    j = json{{"users", p.users}};
+}
+
+void from_json(const json &j, group &p)
+{
+    j.at("users").get_to(p.users);
+}
+
+/**
+ * Main
+ */
 extern "C" int contract_main(int argc, char **argv)
 {
     // init state
     if (!state_exist())
     {
-        json j = json::array();
-        state_write(j);
+        group newGroup;
+        state_write(newGroup);
     }
     // execute command
     if (argc == 1)
@@ -72,15 +115,15 @@ extern "C" int contract_main(int argc, char **argv)
         {
             std::string name = argv[2];
             std::string password = argv[3];
-            json j = state_read();
-            for (auto &i : j)
+            group curGroup = state_read();
+            for (auto &user : curGroup.users)
             {
-                if (i["name"] == name && i["password"] == password)
+                if (user.name == name && user.password == password)
                 {
                     json tmp = json::object();
                     tmp["isExist"] = true;
-                    tmp["aid"] = i["aid"];
-                    tmp["name"] = i["name"];
+                    tmp["aid"] = user.aid;
+                    tmp["name"] = user.name;
                     state_write(tmp);
                     return 0;
                 }
@@ -98,14 +141,14 @@ extern "C" int contract_main(int argc, char **argv)
         {
             std::string aid = argv[2];
             std::string password = argv[3];
-            json j = state_read();
-            for (auto &i : j)
+            group curGroup = state_read();
+            for (auto &user : curGroup.users)
             {
-                if (i["aid"] == aid)
+                if (user.aid == aid)
                 {
                     json tmp = json::object();
                     tmp["isExist"] = true;
-                    if (i["password"] == password)
+                    if (user.password == password)
                     {
                         tmp["result"] = true;
                     }
@@ -130,13 +173,10 @@ extern "C" int contract_main(int argc, char **argv)
         {
             std::string name = argv[2];
             std::string password = argv[3];
-            json j = state_read();
-            json tmp;
-            tmp["name"] = name;
-            tmp["password"] = password;
-            tmp["aid"] = boost::uuids::to_string(boost::uuids::random_generator()());
-            j.push_back(tmp);
-            state_write(j);
+            group curGroup = state_read();
+            user newUser = user{boost::uuids::to_string(boost::uuids::random_generator()()), name, password, std::vector<std::string>()};
+            curGroup.users.push_back(newUser);
+            state_write(curGroup);
         }
         break;
     case Command::getCoins:
@@ -146,22 +186,14 @@ extern "C" int contract_main(int argc, char **argv)
         }
         {
             std::string aid = argv[2];
-            json j = state_read();
-            for (auto &i : j)
+            group curGroup = state_read();
+            for (auto &user : curGroup.users)
             {
-                if (i["aid"] == aid)
+                if (user.aid == aid)
                 {
                     json tmp = json::object();
                     tmp["isExist"] = true;
-                    // check if coins exist
-                    if (i.find("coins") != i.end())
-                    {
-                        tmp["coins"] = i["coins"];
-                    }
-                    else
-                    {
-                        tmp["coins"] = json::array();
-                    }
+                    tmp["coins"] = user.coins;
                     state_write(tmp);
                     return 0;
                 }
@@ -179,22 +211,13 @@ extern "C" int contract_main(int argc, char **argv)
         {
             std::string aid = argv[2];
             std::string coinAddress = argv[3];
-            json j = state_read();
-            for (auto &i : j)
+            group curGroup = state_read();
+            for (auto &user : curGroup.users)
             {
-                if (i["aid"] == aid)
+                if (user.aid == aid)
                 {
-                    // check if coins exist
-                    if (i.find("coins") != i.end())
-                    {
-                        i["coins"].push_back(coinAddress);
-                    }
-                    else
-                    {
-                        i["coins"] = json::array();
-                        i["coins"].push_back(coinAddress);
-                    }
-                    state_write(j);
+                    user.coins.push_back(coinAddress);
+                    state_write(curGroup);
                     return 0;
                 }
             }
@@ -208,27 +231,20 @@ extern "C" int contract_main(int argc, char **argv)
         {
             std::string aid = argv[2];
             std::string coinAddress = argv[3];
-            json j = state_read();
-            for (auto &i : j)
+            group curGroup = state_read();
+            for (auto &user : curGroup.users)
             {
-                if (i["aid"] == aid)
+                if (user.aid == aid)
                 {
-                    // check if coins exist
-                    if (i.find("coins") != i.end())
+                    for (auto it = user.coins.begin(); it != user.coins.end(); it++)
                     {
-                        auto tmp = json::array();
-                        for (auto &coin : i["coins"])
+                        if (*it == coinAddress)
                         {
-                            if (coin != coinAddress)
-                            {
-                                tmp.push_back(coin);
-                            }
+                            user.coins.erase(it);
                         }
-                        i["coins"] = tmp;
-                        state_write(j);
-                        return 0;
                     }
-                    break;
+                    state_write(curGroup);
+                    return 0;
                 }
             }
             break;
