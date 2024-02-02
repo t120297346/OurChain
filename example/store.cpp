@@ -236,7 +236,7 @@ extern "C" int contract_main(int argc, char **argv)
           tmp["aid"] = it.aid;
           tmp["coin"] = curMall.coinAddress;
           tmp["isExist"] = true;
-          state_write(it);
+          state_write(tmp);
           return 0;
         }
       }
@@ -282,6 +282,17 @@ extern "C" int contract_main(int argc, char **argv)
       store newStore;
       newStore.name = storeName;
       newStore.aid = aid;
+      // check if store exist
+      for (auto &it : curMall.storeList)
+      {
+        if (it.aid == aid)
+        {
+          // std::cerr << "store exist" << std::endl;
+          it.name = storeName;
+          state_write(curMall);
+          return 0;
+        }
+      }
       curMall.storeList.push_back(newStore);
       state_write(curMall);
     }
@@ -339,16 +350,19 @@ extern "C" int contract_main(int argc, char **argv)
       {
         if (store.aid == aid)
         {
-          for (auto it = store.productList.begin(); it != store.productList.end(); it++)
+          auto it = store.productList.begin();
+          while (it != store.productList.end())
           {
             if (it->name == productName)
             {
-              store.productList.erase(it);
-              state_write(curMall);
-              return 0;
+              it = store.productList.erase(it);
+            }
+            else
+            {
+              ++it;
             }
           }
-          // std::cerr << "product not exist" << std::endl;
+          state_write(curMall);
           return 0;
         }
       }

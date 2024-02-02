@@ -236,11 +236,16 @@ extern "C" int contract_main(int argc, char **argv)
             {
                 if (user.aid == aid)
                 {
-                    for (auto it = user.coins.begin(); it != user.coins.end(); it++)
+                    auto it = user.coins.begin();
+                    while (it != user.coins.end())
                     {
                         if (*it == coinAddress)
                         {
-                            user.coins.erase(it);
+                            it = user.coins.erase(it);
+                        }
+                        else
+                        {
+                            ++it;
                         }
                     }
                     state_write(curGroup);
