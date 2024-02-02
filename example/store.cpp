@@ -279,9 +279,6 @@ extern "C" int contract_main(int argc, char **argv)
       {
         return 0;
       }
-      store newStore;
-      newStore.name = storeName;
-      newStore.aid = aid;
       // check if store exist
       for (auto &it : curMall.storeList)
       {
@@ -293,6 +290,9 @@ extern "C" int contract_main(int argc, char **argv)
           return 0;
         }
       }
+      store newStore;
+      newStore.name = storeName;
+      newStore.aid = aid;
       curMall.storeList.push_back(newStore);
       state_write(curMall);
     }
