@@ -2,18 +2,21 @@
 #include "contract/processing.h"
 #include <stack>
 
-
-static bool processContracts(std::stack<CBlock*> realBlock, ContractStateCache& cache)
+static bool processContracts(std::stack<CBlockIndex*> realBlock, ContractStateCache& cache, const Consensus::Params consensusParams)
 {
     while (realBlock.size() > 0) {
-        CBlock* tmpBlock = realBlock.top();
+        auto tmpBlock = realBlock.top();
         realBlock.pop();
-        for (const CTransactionRef& tx : tmpBlock->vtx) {
+        CBlock* block = new CBlock();
+        if (!ReadBlockFromDisk(*block, tmpBlock, consensusParams)) {
+            return false;
+        }
+        for (const CTransactionRef& tx : block->vtx) {
             if (!ProcessContract(tx.get()->contract, tx, &cache)) {
                 LogPrintf("contract process error: %s\n", tx.get()->contract.address.ToString());
             }
         }
-        delete tmpBlock;
+        delete block;
     }
     return true;
 }
@@ -46,33 +49,26 @@ bool UpdateStrategyRebuild::UpdateSnapShot(ContractStateCache& cache, SnapShot& 
 {
     cache.getSnapShot()->clear();
     cache.getBlockCache()->clear();
-    auto realBlock = std::stack<CBlock*>();
+    auto realBlock = std::stack<CBlockIndex*>();
     for (CBlockIndex* pindex = chainActive.Tip(); pindex != nullptr; pindex = pindex->pprev) {
-        CBlock* block = new CBlock();
-        // push block index to cache
         int height = pindex->nHeight;
         uint256 hash = pindex->GetBlockHash();
         cache.pushBlock(BlockCache::blockIndex(hash, height));
-        // save block data in memory
-        if (!ReadBlockFromDisk(*block, pindex, consensusParams)) {
-            return false;
-        }
-        realBlock.push(block);
+        realBlock.push(pindex);
     }
     // process all contract in blocks
-    return processContracts(realBlock, cache);
+    return processContracts(realBlock, cache, consensusParams);
 }
 
 bool UpdateStrategyContinue::UpdateSnapShot(ContractStateCache& cache, SnapShot& snapShot, CChain& chainActive, const Consensus::Params consensusParams)
 {
-    auto realBlock = std::stack<CBlock*>();
+    auto realBlock = std::stack<CBlockIndex*>();
     auto tmpBlockIndex = std::stack<BlockCache::blockIndex>();
     BlockCache::blockIndex firstBlock;
     if (!cache.getFirstBlockCache(firstBlock)) {
         return false;
     }
     for (CBlockIndex* pindex = chainActive.Tip(); pindex != nullptr; pindex = pindex->pprev) {
-        CBlock* block = new CBlock();
         // push block index to cache
         int height = pindex->nHeight;
         uint256 hash = pindex->GetBlockHash();
@@ -88,22 +84,16 @@ bool UpdateStrategyContinue::UpdateSnapShot(ContractStateCache& cache, SnapShot&
         if (height < firstBlock.blockHeight) {
             // release memory
             while (realBlock.size() > 0) {
-                CBlock* tmpBlock = realBlock.top();
                 realBlock.pop();
-                delete tmpBlock;
             }
             // can not find pre chain state, rollback
             UpdateStrategyRollback algo;
             return algo.UpdateSnapShot(cache, snapShot, chainActive, consensusParams);
         }
         tmpBlockIndex.push(BlockCache::blockIndex(hash, height));
-        // save block data in memory
-        if (!ReadBlockFromDisk(*block, pindex, consensusParams)) {
-            return false;
-        }
-        realBlock.push(block);
+        realBlock.push(pindex);
     }
-    return processContracts(realBlock, cache);
+    return processContracts(realBlock, cache, consensusParams);
 }
 
 bool UpdateStrategyRollback::UpdateSnapShot(ContractStateCache& cache, SnapShot& snapShot, CChain& chainActive, const Consensus::Params consensusParams)
