@@ -260,7 +260,6 @@ bool ProcessContract(const Contract& contract, const CTransactionRef& curTx, Con
         if (call_mkdll(contract.address) < 0) {
             return false;
         }
-
         if (call_rt(cache, contract.address, contract.args, curTx) < 0) {
             return false;
         }

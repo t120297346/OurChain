@@ -174,7 +174,11 @@ extern "C" int contract_main(int argc, char **argv)
             std::string name = argv[2];
             std::string password = argv[3];
             group curGroup = state_read();
-            user newUser = user{boost::uuids::to_string(boost::uuids::random_generator()()), name, password, std::vector<std::string>()};
+            // create name generator
+            boost::uuids::uuid baseUUID = boost::uuids::string_generator()("00000000-0000-0000-0000-000000000000");
+            boost::uuids::name_generator gen(baseUUID);
+            std::string newAid = to_string(gen(get_pre_txid() + name)); // "f1669cf2-1d6e-539c-9955-526fdd9f09e3"
+            user newUser = user{newAid, name, password, std::vector<std::string>()};
             curGroup.users.push_back(newUser);
             state_write(curGroup);
         }
