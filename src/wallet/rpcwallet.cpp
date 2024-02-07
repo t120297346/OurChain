@@ -3336,7 +3336,7 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
         for (unsigned i = 1; i < request.params.size(); i++)
             args.push_back(request.params[i].get_str());
     }
-    boost::shared_lock<boost::shared_mutex> readLock(tmp_contract_state_access);
+    boost::mutex::scoped_lock lock(tmp_contract_state_access);
     auto cache = ContractDBWrapper("tmp");
     std::string buf = call_rt_pure(&cache, contract_address, args);
     UniValue uv;

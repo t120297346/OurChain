@@ -9,7 +9,7 @@
 
 #include <boost/thread/shared_mutex.hpp>
 
-extern boost::shared_mutex tmp_contract_state_access;
+extern boost::mutex tmp_contract_state_access;
 
 class ContractDBWrapper
 {

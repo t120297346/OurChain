@@ -1,6 +1,6 @@
 #include "contract/dbWrapper.h"
 
-boost::shared_mutex tmp_contract_state_access;
+boost::mutex tmp_contract_state_access;
 
 ContractDBWrapper::ContractDBWrapper(std::string name)
 {
@@ -99,7 +99,7 @@ void ContractDBWrapper::saveDuplicateState(fs::path path)
     leveldb::DB* newdb;
     leveldb::Options options;
     options.create_if_missing = true;
-    boost::unique_lock<boost::shared_mutex> writeLock(tmp_contract_state_access);
+    boost::mutex::scoped_lock lock(tmp_contract_state_access);
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &newdb);
     assert(status.ok());
     leveldb::WriteOptions writeOptions;
