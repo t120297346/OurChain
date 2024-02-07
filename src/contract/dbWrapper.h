@@ -2,9 +2,14 @@
 #define CONTRACT_DB_WRAPPER_H
 
 #include "util.h"
+#include <boost/thread/shared_mutex.hpp>
 #include <leveldb/db.h>
 #include <string>
 #include <vector>
+
+#include <boost/thread/shared_mutex.hpp>
+
+extern boost::shared_mutex tmp_contract_state_access;
 
 class ContractDBWrapper
 {
@@ -21,8 +26,6 @@ private:
     {
         return CheckPointPath / name;
     }
-    // 清除該位置前一個快照並保存當前狀態快照到目標位置
-    void clearAndSaveDuplicateState(fs::path path);
     // 保存當前狀態快照到目標位置
     void saveDuplicateState(fs::path path);
 

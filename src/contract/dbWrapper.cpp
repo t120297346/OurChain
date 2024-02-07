@@ -1,5 +1,7 @@
 #include "contract/dbWrapper.h"
 
+boost::shared_mutex tmp_contract_state_access;
+
 ContractDBWrapper::ContractDBWrapper(std::string name)
 {
     leveldb::Options options;
@@ -92,19 +94,12 @@ void ContractDBWrapper::clearAllStates()
     }
 }
 
-void ContractDBWrapper::clearAndSaveDuplicateState(fs::path path)
-{
-    // use fs delete all files in path
-    remove_all(path);
-    // save duplicate state
-    saveDuplicateState(path);
-}
-
 void ContractDBWrapper::saveDuplicateState(fs::path path)
 {
     leveldb::DB* newdb;
     leveldb::Options options;
     options.create_if_missing = true;
+    boost::unique_lock<boost::shared_mutex> writeLock(tmp_contract_state_access);
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &newdb);
     assert(status.ok());
     leveldb::WriteOptions writeOptions;
@@ -134,7 +129,8 @@ void ContractDBWrapper::saveTmpState()
 {
     fs::path path = getContractDBPath("tmp");
     TryCreateDirectories(path);
-    clearAndSaveDuplicateState(path);
+    // overwrite all states
+    saveDuplicateState(path);
 }
 
 // find check point

@@ -3156,9 +3156,9 @@ static void SendContractTx(CWallet* const pwallet, const Contract* contract, con
 
 static bool ReadFile(const std::string& filename, std::string& buf)
 {
-    if(filename.find("http") != std::string::npos){
+    if (filename.find("http") != std::string::npos) {
         std::string command = "wget " + filename + " -O " + GetDataDir().string() + "/code.cpp";
-        if(system(command.c_str()) == -1) {
+        if (system(command.c_str()) == -1) {
             std::string strError;
             strError = strprintf("Error: wget command error");
             throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -3167,23 +3167,24 @@ static bool ReadFile(const std::string& filename, std::string& buf)
         std::string line;
         std::ifstream file(GetDataDir().string() + "/code.cpp");
         if (file.is_open() == false) return false;
-        while (getline(file, line)) buf += (line + "\n");
+        while (getline(file, line))
+            buf += (line + "\n");
         file.close();
 
         command = "rm " + GetDataDir().string() + "/code.cpp";
-        if(system(command.c_str()) == -1) {
+        if (system(command.c_str()) == -1) {
             std::string strError;
             strError = strprintf("Error: rm command error");
             throw JSONRPCError(RPC_WALLET_ERROR, strError);
         }
         return true;
-    }
-    else {
+    } else {
         std::string line;
         std::ifstream file(filename);
 
         if (file.is_open() == false) return false;
-        while (getline(file, line)) buf += (line + "\n");
+        while (getline(file, line))
+            buf += (line + "\n");
         file.close();
         return true;
     }
@@ -3335,6 +3336,7 @@ UniValue dumpcontractmessage(const JSONRPCRequest& request)
         for (unsigned i = 1; i < request.params.size(); i++)
             args.push_back(request.params[i].get_str());
     }
+    boost::shared_lock<boost::shared_mutex> readLock(tmp_contract_state_access);
     auto cache = ContractDBWrapper("tmp");
     std::string buf = call_rt_pure(&cache, contract_address, args);
     UniValue uv;
