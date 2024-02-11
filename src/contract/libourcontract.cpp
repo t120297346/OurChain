@@ -76,7 +76,7 @@ static inline const char* get_contracts_dir()
 
 std::string* physical_state_read(const char* contractAddress)
 {
-    int flag = 0;
+    int flag = BYTE_READ_STATE;
     fwrite((void*)&flag, sizeof(int), 1, out);
     fflush(out);
     fwrite((void*)contractAddress, sizeof(char) * 64, 1, out);
@@ -102,7 +102,7 @@ std::string* physical_state_read(const char* contractAddress)
 
 int physical_state_write(const std::string* buf)
 {
-    int flag = 1;
+    int flag = BYTE_WRITE_STATE;
     int ret = fwrite((void*)&flag, sizeof(int), 1, out);
     if (ret <= 0) {
         err_printf("state_write: write control code error\n");
@@ -131,7 +131,7 @@ bool check_runtime_can_write_db()
         // only base contract can write state to db
         return false;
     }
-    int flag = 2;
+    int flag = CHECK_RUNTIME_STATE;
     fwrite((void*)&flag, sizeof(int), 1, out);
     fflush(out);
     int ret = fread((void*)&flag, sizeof(int), 1, in);
@@ -252,7 +252,7 @@ json pre_state_read()
 
 std::string get_pre_txid()
 {
-    int flag = 3;
+    int flag = GET_PRE_TXID_STATE;
     fwrite((void*)&flag, sizeof(int), 1, out);
     fflush(out);
     char buf[65];

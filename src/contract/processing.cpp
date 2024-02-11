@@ -17,11 +17,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define BYTE_READ_STATE 0
-#define BYTE_WRITE_STATE 1
-#define CHECK_RUNTIME_STATE 2
-#define GET_PRE_TXID_STATE 3
-
 static fs::path contracts_dir;
 
 const static fs::path& GetContractsDir()

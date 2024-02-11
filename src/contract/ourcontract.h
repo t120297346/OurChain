@@ -1,10 +1,17 @@
 #ifndef BITCOIN_CONTRACT_OURCONTRACT_H
 #define BITCOIN_CONTRACT_OURCONTRACT_H
 
+/* Origin config
 #define BYTE_READ_STATE 0
 #define BYTE_SEND_TO_ADDRESS -1
 #define BYTE_SEND_TO_CONTRACT -2
 #define BYTE_CALL_CONTRACT -3
+*/
+
+#define BYTE_READ_STATE 0
+#define BYTE_WRITE_STATE 1
+#define CHECK_RUNTIME_STATE 2
+#define GET_PRE_TXID_STATE 3
 
 #include <stdbool.h>
 #include <stdint.h>
