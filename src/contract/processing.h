@@ -14,6 +14,11 @@
 #include <string>
 #include <vector>
 
+#define BYTE_READ_STATE 0
+#define BYTE_WRITE_STATE 1
+#define CHECK_RUNTIME_STATE 2
+#define GET_PRE_TXID_STATE 3
+
 // 在真實環境中執行合約且存儲數據
 bool ProcessContract(const Contract& contract, const CTransactionRef& curTx, ContractStateCache* cache);
 
