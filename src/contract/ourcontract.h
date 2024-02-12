@@ -12,11 +12,13 @@
 #define BYTE_WRITE_STATE 1
 #define CHECK_RUNTIME_STATE 2
 #define GET_PRE_TXID_STATE 3
+#define CONTRACT_DAEMON 4
 
+#include <json.hpp>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string>
-#include <json.hpp>
+#include <unistd.h>
 
 using json = nlohmann::json;
 
@@ -46,6 +48,9 @@ json pre_state_read();
 
 /* check pre txid for verify sign*/
 std::string get_pre_txid();
+
+/* Contract daemon */
+std::string contract_daemon();
 
 class ContractLocalState
 {

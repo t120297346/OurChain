@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 static fs::path contracts_dir;
+std::queue<int> cont_daemon_q;
 
 const static fs::path& GetContractsDir()
 {
@@ -173,13 +174,23 @@ static int call_rt(ContractStateCache* cache, const uint256& contract, const std
             int size = read_buffer_size(pipe_state_read);
             write_state_to_cache(cache, hex_ctid, size, pipe_state_read);
         } else if (flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
-            flag = 1;
+            flag = BYTE_WRITE_STATE;
             fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
             fflush(pipe_state_write);
         } else if (flag == GET_PRE_TXID_STATE) {
             std::string txid = curTx.get()->vin[0].prevout.hash.ToString();
             fwrite((void*)txid.c_str(), sizeof(char) * 64, 1, pipe_state_write);
             fflush(pipe_state_write);
+        } else if (flag == CONTRACT_DAEMON) { /* Contract daemon */
+            std::string cont_dir = GetContractsDir().string() + "/" + contract.ToString();
+            int cont_pid;
+            fwrite((void*)cont_dir.c_str(), sizeof(char) * 150, 1, pipe_state_write);
+            fflush(pipe_state_write);
+            fread((void*)&cont_pid, sizeof(int), 1, pipe_state_read);
+            cont_daemon_q.push(cont_pid);
+            fread((void*)&cont_pid, sizeof(int), 1, pipe_state_read);
+            cont_daemon_q.push(cont_pid);
+            
         } else {
             break;
         }
@@ -265,4 +276,14 @@ bool ProcessContract(const Contract& contract, const CTransactionRef& curTx, Con
     }
 
     return true;
+}
+
+/* Contract daemon */
+void StopContractDaemon()
+{
+    while (!cont_daemon_q.empty()) {
+        int cont_pid = cont_daemon_q.front();
+        kill(cont_pid, SIGTERM);
+        cont_daemon_q.pop();
+    }
 }
