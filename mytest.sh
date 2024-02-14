@@ -21,6 +21,7 @@ make -j8 && make install && ldconfig
 sleep 5
 mining 11
 contract_address=$(deploycontract)
+echo "contract: $contract_address"
 mining 1
 ./src/bitcoin-cli callcontract "$contract_address" ""
 mining 2
