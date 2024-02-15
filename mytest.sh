@@ -26,4 +26,6 @@ mining 1
 ./src/bitcoin-cli callcontract "$contract_address" ""
 mining 2
 ./src/bitcoin-cli dumpcontractmessage "$contract_address" ""
+# 一般化合約介面
+./src/bitcoin-cli dumpcontractmessage "$contract_address" "get"
 ./src/bitcoin-cli stop

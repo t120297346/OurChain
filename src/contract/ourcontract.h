@@ -13,10 +13,10 @@
 #define CHECK_RUNTIME_STATE 2
 #define GET_PRE_TXID_STATE 3
 
+#include <json.hpp>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string>
-#include <json.hpp>
 
 using json = nlohmann::json;
 
@@ -47,14 +47,18 @@ json pre_state_read();
 /* check pre txid for verify sign*/
 std::string get_pre_txid();
 
+/* shortcut for return general interface */
+void general_interface_write(std::string protocal, std::string version);
+
 class ContractLocalState
 {
 private:
     std::string* stateStr;
     json state;
     json preState;
+
 public:
-    ContractLocalState(std::string *stateStr);
+    ContractLocalState(std::string* stateStr);
     ~ContractLocalState();
     void setState(json state);
     void setPreState(json preState);

@@ -250,6 +250,14 @@ json pre_state_read()
     return call_stack.top()->getPreState();
 }
 
+void general_interface_write(std::string protocal, std::string version)
+{
+    json j;
+    j["protocal"] = protocal;
+    j["version"] = version;
+    state_write(j);
+}
+
 std::string get_pre_txid()
 {
     int flag = GET_PRE_TXID_STATE;
