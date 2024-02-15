@@ -268,7 +268,7 @@ std::string get_pre_txid()
 }
 
 /* Contract daemon */
-std::string contract_daemon()
+std::string contract_daemon(int (&cont_pid)[2])
 {
     /* Send command */
     int flag = CONTRACT_DAEMON;
@@ -294,6 +294,7 @@ std::string contract_daemon()
             return "";
         }
         fflush(out);
+        cont_pid[0] = pid;
     }
 
     /* An error occurred */
@@ -301,7 +302,8 @@ std::string contract_daemon()
         exit(EXIT_FAILURE);
     /* Success: Let the parent terminate */
     if (pid > 0)
-        exit(EXIT_SUCCESS);
+        return std::string("parent");
+       exit(EXIT_SUCCESS);
 
     /* On success: The child process becomes session leader */
     if (setsid() < 0)
@@ -313,6 +315,7 @@ std::string contract_daemon()
     signal(SIGHUP, SIG_IGN);
 
     /* Fork off for the second time*/
+    /*
     pid = fork();
     if (pid != 0) {
         int flag = CONTRACT_DAEMON;
@@ -321,14 +324,16 @@ std::string contract_daemon()
             return "";
         }
         fflush(out);
+        cont_pid[1] = pid;
     }
+    */
 
     /* An error occurred */
     if (pid < 0)
         exit(EXIT_FAILURE);
 
     /* Set new file permissions */
-    umask(0);
+    //umask(0);
 
     /* Change the working directory to the root directory */
     /* or another appropriated directory */
@@ -340,4 +345,13 @@ std::string contract_daemon()
         close (x);
     
     return std::string(buf);
+}
+
+void daemon_log(FILE* f, const char* format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    vfprintf(f, format, args);
+    fflush(f);
 }

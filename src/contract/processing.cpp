@@ -174,7 +174,7 @@ static int call_rt(ContractStateCache* cache, const uint256& contract, const std
             int size = read_buffer_size(pipe_state_read);
             write_state_to_cache(cache, hex_ctid, size, pipe_state_read);
         } else if (flag == CHECK_RUNTIME_STATE) { // check mode (pure = 0, not pure = 1)
-            flag = BYTE_WRITE_STATE;
+            flag = 1;
             fwrite((void*)&flag, sizeof(int), 1, pipe_state_write);
             fflush(pipe_state_write);
         } else if (flag == GET_PRE_TXID_STATE) {
@@ -186,8 +186,8 @@ static int call_rt(ContractStateCache* cache, const uint256& contract, const std
             int cont_pid;
             fwrite((void*)cont_dir.c_str(), sizeof(char) * 150, 1, pipe_state_write);
             fflush(pipe_state_write);
-            fread((void*)&cont_pid, sizeof(int), 1, pipe_state_read);
-            cont_daemon_q.push(cont_pid);
+            //fread((void*)&cont_pid, sizeof(int), 1, pipe_state_read);
+            //cont_daemon_q.push(cont_pid);
             fread((void*)&cont_pid, sizeof(int), 1, pipe_state_read);
             cont_daemon_q.push(cont_pid);
             

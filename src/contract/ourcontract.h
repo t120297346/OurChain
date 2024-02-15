@@ -50,7 +50,8 @@ json pre_state_read();
 std::string get_pre_txid();
 
 /* Contract daemon */
-std::string contract_daemon();
+std::string contract_daemon(int (&cont_pid)[2]);
+void daemon_log(FILE* f, const char* format, ...);
 
 class ContractLocalState
 {
