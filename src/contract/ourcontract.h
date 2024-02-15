@@ -48,7 +48,7 @@ json pre_state_read();
 std::string get_pre_txid();
 
 /* shortcut for return general interface */
-void general_interface_write(std::string protocal, std::string version);
+void general_interface_write(std::string protocol, std::string version);
 
 class ContractLocalState
 {
