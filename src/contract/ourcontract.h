@@ -55,7 +55,7 @@ std::string contract_daemon(int (&cont_pid)[2]);
 void daemon_log(FILE* f, const char* format, ...);
 
 /* shortcut for return general interface */
-void general_interface_write(std::string protocal, std::string version);
+void general_interface_write(std::string protocol, std::string version);
 
 class ContractLocalState
 {
