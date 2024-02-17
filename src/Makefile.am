@@ -48,18 +48,24 @@ endif
 $(LIBSECP256K1): $(wildcard secp256k1/src/*) $(wildcard secp256k1/include/*)
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
 
+# Rust Library
+LIBRUSTLIB=rustlib/target/debug/librustlib.a
+$(LIBRUSTLIB): $(wildcard rustlib/src/*.rs)
+	cargo build --manifest-path=$(@D)/../../Cargo.toml
+#
+
 # Make is not made aware of per-object dependencies to avoid limiting building parallelization
 # But to build the less dependent modules first, we manually select their order here:
 EXTRA_LIBRARIES += \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_CLI) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBGPOW)
+	$(LIBBITCOIN_CRYPTO) \
+	$(LIBBITCOIN_UTIL) \
+	$(LIBBITCOIN_COMMON) \
+	$(LIBBITCOIN_CONSENSUS) \
+	$(LIBBITCOIN_SERVER) \
+	$(LIBBITCOIN_CLI) \
+	$(LIBBITCOIN_WALLET) \
+	$(LIBBITCOIN_ZMQ) \
+	$(LIBGPOW)
 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS) $(LIBOURCONTRACT)
 
@@ -69,11 +75,11 @@ TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += bitcoind
+	bin_PROGRAMS += bitcoind
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += bitcoin-cli bitcoin-tx
+	bin_PROGRAMS += bitcoin-cli bitcoin-tx
 endif
 
 bin_SCRIPTS =
@@ -86,106 +92,106 @@ bin_PROGRAMS += ourcontract-rt
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #
 BITCOIN_CORE_H = \
-  addrdb.h \
-  addrman.h \
-  base58.h \
-  bloom.h \
-  blockencodings.h \
-  chain.h \
-  chainparams.h \
-  chainparamsbase.h \
-  chainparamsseeds.h \
-  checkpoints.h \
-  checkqueue.h \
-  clientversion.h \
-  coins.h \
-  compat.h \
-  compat/byteswap.h \
-  compat/endian.h \
-  compat/sanity.h \
-  compressor.h \
-  consensus/consensus.h \
-  consensus/tx_verify.h \
-  contract/processing.h \
-  contract/cache.h \
-  contract/dbWrapper.h \
-  contract/observer.h \
-  contract/updateStrategy.h \
-  core_io.h \
-  core_memusage.h \
-  cuckoocache.h \
-  fs.h \
-  httprpc.h \
-  httpserver.h \
-  indirectmap.h \
-  init.h \
-  key.h \
-  keystore.h \
-  dbwrapper.h \
-  limitedmap.h \
-  memusage.h \
-  merkleblock.h \
-  miner.h \
-  net.h \
-  net_processing.h \
-  netaddress.h \
-  netbase.h \
-  netmessagemaker.h \
-  noui.h \
-  OurChain/gpowserver.h \
-  policy/feerate.h \
-  policy/fees.h \
-  policy/policy.h \
-  policy/rbf.h \
-  pow.h \
-  protocol.h \
-  random.h \
-  reverse_iterator.h \
-  reverselock.h \
-  rpc/blockchain.h \
-  rpc/client.h \
-  rpc/mining.h \
-  rpc/protocol.h \
-  rpc/server.h \
-  rpc/register.h \
-  scheduler.h \
-  script/sigcache.h \
-  script/sign.h \
-  script/standard.h \
-  script/ismine.h \
-  streams.h \
-  support/allocators/secure.h \
-  support/allocators/zeroafterfree.h \
-  support/cleanse.h \
-  support/events.h \
-  support/lockedpool.h \
-  sync.h \
-  threadsafety.h \
-  threadinterrupt.h \
-  timedata.h \
-  torcontrol.h \
-  txdb.h \
-  txmempool.h \
-  ui_interface.h \
-  undo.h \
-  util.h \
-  utilmoneystr.h \
-  utiltime.h \
-  validation.h \
-  validationinterface.h \
-  versionbits.h \
-  wallet/coincontrol.h \
-  wallet/crypter.h \
-  wallet/db.h \
-  wallet/feebumper.h \
-  wallet/rpcwallet.h \
-  wallet/wallet.h \
-  wallet/walletdb.h \
-  warnings.h \
-  zmq/zmqabstractnotifier.h \
-  zmq/zmqconfig.h\
-  zmq/zmqnotificationinterface.h \
-  zmq/zmqpublishnotifier.h
+	addrdb.h \
+	addrman.h \
+	base58.h \
+	bloom.h \
+	blockencodings.h \
+	chain.h \
+	chainparams.h \
+	chainparamsbase.h \
+	chainparamsseeds.h \
+	checkpoints.h \
+	checkqueue.h \
+	clientversion.h \
+	coins.h \
+	compat.h \
+	compat/byteswap.h \
+	compat/endian.h \
+	compat/sanity.h \
+	compressor.h \
+	consensus/consensus.h \
+	consensus/tx_verify.h \
+	contract/processing.h \
+	contract/cache.h \
+	contract/dbWrapper.h \
+	contract/observer.h \
+	contract/updateStrategy.h \
+	core_io.h \
+	core_memusage.h \
+	cuckoocache.h \
+	fs.h \
+	httprpc.h \
+	httpserver.h \
+	indirectmap.h \
+	init.h \
+	key.h \
+	keystore.h \
+	dbwrapper.h \
+	limitedmap.h \
+	memusage.h \
+	merkleblock.h \
+	miner.h \
+	net.h \
+	net_processing.h \
+	netaddress.h \
+	netbase.h \
+	netmessagemaker.h \
+	noui.h \
+	OurChain/gpowserver.h \
+	policy/feerate.h \
+	policy/fees.h \
+	policy/policy.h \
+	policy/rbf.h \
+	pow.h \
+	protocol.h \
+	random.h \
+	reverse_iterator.h \
+	reverselock.h \
+	rpc/blockchain.h \
+	rpc/client.h \
+	rpc/mining.h \
+	rpc/protocol.h \
+	rpc/server.h \
+	rpc/register.h \
+	scheduler.h \
+	script/sigcache.h \
+	script/sign.h \
+	script/standard.h \
+	script/ismine.h \
+	streams.h \
+	support/allocators/secure.h \
+	support/allocators/zeroafterfree.h \
+	support/cleanse.h \
+	support/events.h \
+	support/lockedpool.h \
+	sync.h \
+	threadsafety.h \
+	threadinterrupt.h \
+	timedata.h \
+	torcontrol.h \
+	txdb.h \
+	txmempool.h \
+	ui_interface.h \
+	undo.h \
+	util.h \
+	utilmoneystr.h \
+	utiltime.h \
+	validation.h \
+	validationinterface.h \
+	versionbits.h \
+	wallet/coincontrol.h \
+	wallet/crypter.h \
+	wallet/db.h \
+	wallet/feebumper.h \
+	wallet/rpcwallet.h \
+	wallet/wallet.h \
+	wallet/walletdb.h \
+	warnings.h \
+	zmq/zmqabstractnotifier.h \
+	zmq/zmqconfig.h\
+	zmq/zmqnotificationinterface.h \
+	zmq/zmqpublishnotifier.h
 
 
 obj/build.h: FORCE
@@ -198,58 +204,58 @@ libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
-  addrdb.cpp \
-  addrman.cpp \
-  bloom.cpp \
-  blockencodings.cpp \
-  chain.cpp \
-  checkpoints.cpp \
-  consensus/tx_verify.cpp \
-  contract/processing.cpp \
-  contract/cache.cpp \
-  contract/dbWrapper.cpp \
-  contract/observer.cpp \
-  contract/updateStrategy.cpp \
-  httprpc.cpp \
-  httpserver.cpp \
-  init.cpp \
-  dbwrapper.cpp \
-  merkleblock.cpp \
-  miner.cpp \
-  net.cpp \
-  net_processing.cpp \
-  noui.cpp \
-  OurChain/gpowserver.cpp \
-  policy/fees.cpp \
-  policy/policy.cpp \
-  policy/rbf.cpp \
-  pow.cpp \
-  rest.cpp \
-  rpc/blockchain.cpp \
-  rpc/mining.cpp \
-  rpc/misc.cpp \
-  rpc/net.cpp \
-  rpc/rawtransaction.cpp \
-  rpc/server.cpp \
-  script/sigcache.cpp \
-  script/ismine.cpp \
-  timedata.cpp \
-  torcontrol.cpp \
-  txdb.cpp \
-  txmempool.cpp \
-  ui_interface.cpp \
-  validation.cpp \
-  validationinterface.cpp \
-  versionbits.cpp \
-  $(BITCOIN_CORE_H)
+	addrdb.cpp \
+	addrman.cpp \
+	bloom.cpp \
+	blockencodings.cpp \
+	chain.cpp \
+	checkpoints.cpp \
+	consensus/tx_verify.cpp \
+	contract/processing.cpp \
+	contract/cache.cpp \
+	contract/dbWrapper.cpp \
+	contract/observer.cpp \
+	contract/updateStrategy.cpp \
+	httprpc.cpp \
+	httpserver.cpp \
+	init.cpp \
+	dbwrapper.cpp \
+	merkleblock.cpp \
+	miner.cpp \
+	net.cpp \
+	net_processing.cpp \
+	noui.cpp \
+	OurChain/gpowserver.cpp \
+	policy/fees.cpp \
+	policy/policy.cpp \
+	policy/rbf.cpp \
+	pow.cpp \
+	rest.cpp \
+	rpc/blockchain.cpp \
+	rpc/mining.cpp \
+	rpc/misc.cpp \
+	rpc/net.cpp \
+	rpc/rawtransaction.cpp \
+	rpc/server.cpp \
+	script/sigcache.cpp \
+	script/ismine.cpp \
+	timedata.cpp \
+	torcontrol.cpp \
+	txdb.cpp \
+	txmempool.cpp \
+	ui_interface.cpp \
+	validation.cpp \
+	validationinterface.cpp \
+	versionbits.cpp \
+	$(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ
 libbitcoin_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
 libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_zmq_a_SOURCES = \
-  zmq/zmqabstractnotifier.cpp \
-  zmq/zmqnotificationinterface.cpp \
-  zmq/zmqpublishnotifier.cpp
+	zmq/zmqabstractnotifier.cpp \
+	zmq/zmqnotificationinterface.cpp \
+	zmq/zmqpublishnotifier.cpp
 endif
 
 # wallet: shared between bitcoind and bitcoin-qt, but only linked
@@ -257,41 +263,41 @@ endif
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
-  wallet/crypter.cpp \
-  wallet/db.cpp \
-  wallet/feebumper.cpp \
-  wallet/rpcdump.cpp \
-  wallet/rpcwallet.cpp \
-  wallet/wallet.cpp \
-  wallet/walletdb.cpp \
-  contract/processing.cpp \
-  contract/updateStrategy.cpp \
-  contract/observer.cpp \
-  contract/dbWrapper.cpp \
-  contract/cache.cpp \
-  $(BITCOIN_CORE_H)
+	wallet/crypter.cpp \
+	wallet/db.cpp \
+	wallet/feebumper.cpp \
+	wallet/rpcdump.cpp \
+	wallet/rpcwallet.cpp \
+	wallet/wallet.cpp \
+	wallet/walletdb.cpp \
+	contract/processing.cpp \
+	contract/updateStrategy.cpp \
+	contract/observer.cpp \
+	contract/dbWrapper.cpp \
+	contract/cache.cpp \
+	$(BITCOIN_CORE_H)
 
 # crypto primitives library
 crypto_libbitcoin_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_CONFIG_INCLUDES)
 crypto_libbitcoin_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 crypto_libbitcoin_crypto_a_SOURCES = \
-  crypto/aes.cpp \
-  crypto/aes.h \
-  crypto/chacha20.h \
-  crypto/chacha20.cpp \
-  crypto/common.h \
-  crypto/hmac_sha256.cpp \
-  crypto/hmac_sha256.h \
-  crypto/hmac_sha512.cpp \
-  crypto/hmac_sha512.h \
-  crypto/ripemd160.cpp \
-  crypto/ripemd160.h \
-  crypto/sha1.cpp \
-  crypto/sha1.h \
-  crypto/sha256.cpp \
-  crypto/sha256.h \
-  crypto/sha512.cpp \
-  crypto/sha512.h
+	crypto/aes.cpp \
+	crypto/aes.h \
+	crypto/chacha20.h \
+	crypto/chacha20.cpp \
+	crypto/common.h \
+	crypto/hmac_sha256.cpp \
+	crypto/hmac_sha256.h \
+	crypto/hmac_sha512.cpp \
+	crypto/hmac_sha512.h \
+	crypto/ripemd160.cpp \
+	crypto/ripemd160.h \
+	crypto/sha1.cpp \
+	crypto/sha1.h \
+	crypto/sha256.cpp \
+	crypto/sha256.h \
+	crypto/sha512.cpp \
+	crypto/sha512.h
 
 if EXPERIMENTAL_ASM
 crypto_libbitcoin_crypto_a_SOURCES += crypto/sha256_sse4.cpp
@@ -301,59 +307,59 @@ endif
 libbitcoin_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_consensus_a_SOURCES = \
-  amount.h \
-  arith_uint256.cpp \
-  arith_uint256.h \
-  consensus/merkle.cpp \
-  consensus/merkle.h \
-  consensus/params.h \
-  consensus/validation.h \
-  contract/contract.h \
-  hash.cpp \
-  hash.h \
-  prevector.h \
-  primitives/block.cpp \
-  primitives/block.h \
-  primitives/transaction.cpp \
-  primitives/transaction.h \
-  pubkey.cpp \
-  pubkey.h \
-  script/bitcoinconsensus.cpp \
-  script/interpreter.cpp \
-  script/interpreter.h \
-  script/script.cpp \
-  script/script.h \
-  script/script_error.cpp \
-  script/script_error.h \
-  serialize.h \
-  tinyformat.h \
-  uint256.cpp \
-  uint256.h \
-  utilstrencodings.cpp \
-  utilstrencodings.h \
-  version.h
+	amount.h \
+	arith_uint256.cpp \
+	arith_uint256.h \
+	consensus/merkle.cpp \
+	consensus/merkle.h \
+	consensus/params.h \
+	consensus/validation.h \
+	contract/contract.h \
+	hash.cpp \
+	hash.h \
+	prevector.h \
+	primitives/block.cpp \
+	primitives/block.h \
+	primitives/transaction.cpp \
+	primitives/transaction.h \
+	pubkey.cpp \
+	pubkey.h \
+	script/bitcoinconsensus.cpp \
+	script/interpreter.cpp \
+	script/interpreter.h \
+	script/script.cpp \
+	script/script.h \
+	script/script_error.cpp \
+	script/script_error.h \
+	serialize.h \
+	tinyformat.h \
+	uint256.cpp \
+	uint256.h \
+	utilstrencodings.cpp \
+	utilstrencodings.h \
+	version.h
 
 # common: shared between bitcoind, and bitcoin-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
-  base58.cpp \
-  chainparams.cpp \
-  coins.cpp \
-  compressor.cpp \
-  core_read.cpp \
-  core_write.cpp \
-  key.cpp \
-  keystore.cpp \
-  netaddress.cpp \
-  netbase.cpp \
-  policy/feerate.cpp \
-  protocol.cpp \
-  scheduler.cpp \
-  script/sign.cpp \
-  script/standard.cpp \
-  warnings.cpp \
-  $(BITCOIN_CORE_H)
+	base58.cpp \
+	chainparams.cpp \
+	coins.cpp \
+	compressor.cpp \
+	core_read.cpp \
+	core_write.cpp \
+	key.cpp \
+	keystore.cpp \
+	netaddress.cpp \
+	netbase.cpp \
+	policy/feerate.cpp \
+	protocol.cpp \
+	scheduler.cpp \
+	script/sign.cpp \
+	script/standard.cpp \
+	warnings.cpp \
+	$(BITCOIN_CORE_H)
 
 # util: shared between all executables.
 # This library *must* be included to make sure that the glibc
@@ -361,23 +367,23 @@ libbitcoin_common_a_SOURCES = \
 libbitcoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_util_a_SOURCES = \
-  support/lockedpool.cpp \
-  chainparamsbase.cpp \
-  clientversion.cpp \
-  compat/glibc_sanity.cpp \
-  compat/glibcxx_sanity.cpp \
-  compat/strnlen.cpp \
-  fs.cpp \
-  random.cpp \
-  rpc/protocol.cpp \
-  support/cleanse.cpp \
-  sync.cpp \
-  threadinterrupt.cpp \
-  util.cpp \
-  utilmoneystr.cpp \
-  utilstrencodings.cpp \
-  utiltime.cpp \
-  $(BITCOIN_CORE_H)
+	support/lockedpool.cpp \
+	chainparamsbase.cpp \
+	clientversion.cpp \
+	compat/glibc_sanity.cpp \
+	compat/glibcxx_sanity.cpp \
+	compat/strnlen.cpp \
+	fs.cpp \
+	random.cpp \
+	rpc/protocol.cpp \
+	support/cleanse.cpp \
+	sync.cpp \
+	threadinterrupt.cpp \
+	util.cpp \
+	utilmoneystr.cpp \
+	utilstrencodings.cpp \
+	utiltime.cpp \
+	$(BITCOIN_CORE_H)
 
 if GLIBC_BACK_COMPAT
 libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
@@ -388,8 +394,8 @@ include_HEADERS += contract/ourcontract.h json/json.hpp
 contract_libourcontract_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract -I$(top_srcdir)/$(subdir)/json
 contract_libourcontract_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 contract_libourcontract_la_SOURCES = \
-  contract/libourcontract.cpp \
-  contract/ourcontract.h
+	contract/libourcontract.cpp \
+	contract/ourcontract.h
 contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
 
@@ -397,8 +403,8 @@ contract_libourcontract_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 OurChain_libgpow_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 OurChain_libgpow_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 OurChain_libgpow_a_SOURCES = \
-  gpow.cpp \
-  gpow.h
+	gpow.cpp \
+	gpow.h
 OurChain_libgpow_a_LIBADD = $(GMP_LIBS)
 OurChain_libgpow_a_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 #
@@ -407,8 +413,8 @@ OurChain_libgpow_a_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
 libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_cli_a_SOURCES = \
-  rpc/client.cpp \
-  $(BITCOIN_CORE_H)
+	rpc/client.cpp \
+	$(BITCOIN_CORE_H)
 
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
@@ -424,19 +430,19 @@ bitcoind_SOURCES += bitcoind-res.rc
 endif
 
 bitcoind_LDADD = \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBGPOW) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
-  $(LIBSECP256K1)
+	$(LIBBITCOIN_SERVER) \
+	$(LIBBITCOIN_COMMON) \
+	$(LIBUNIVALUE) \
+	$(LIBBITCOIN_UTIL) \
+	$(LIBBITCOIN_WALLET) \
+	$(LIBBITCOIN_ZMQ) \
+	$(LIBGPOW) \
+	$(LIBBITCOIN_CONSENSUS) \
+	$(LIBBITCOIN_CRYPTO) \
+	$(LIBLEVELDB) \
+	$(LIBLEVELDB_SSE42) \
+	$(LIBMEMENV) \
+	$(LIBSECP256K1)
 
 bitcoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
@@ -451,10 +457,10 @@ bitcoin_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
 bitcoin_cli_LDADD = \
-  $(LIBBITCOIN_CLI) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO)
+	$(LIBBITCOIN_CLI) \
+	$(LIBUNIVALUE) \
+	$(LIBBITCOIN_UTIL) \
+	$(LIBBITCOIN_CRYPTO)
 
 bitcoin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
@@ -470,27 +476,27 @@ bitcoin_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
 bitcoin_tx_LDADD = \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBGPOW) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1)
+	$(LIBUNIVALUE) \
+	$(LIBBITCOIN_COMMON) \
+	$(LIBBITCOIN_UTIL) \
+	$(LIBGPOW) \
+	$(LIBBITCOIN_CONSENSUS) \
+	$(LIBBITCOIN_CRYPTO) \
+	$(LIBSECP256K1)
 
 bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(GMP_LIBS)
 #
 
 # ourcontract-rt binary #
 ourcontract_rt_SOURCES = \
-  contract/ourcontract-rt.cpp \
-  contract/ourcontract.h
+	contract/ourcontract-rt.cpp \
+	contract/ourcontract.h
 ourcontract_rt_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/$(subdir)/contract -I$(top_srcdir)/$(subdir)/json
 ourcontract_rt_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 ourcontract_rt_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 ourcontract_rt_LDADD = \
-  $(LIBOURCONTRACT)
+	$(LIBOURCONTRACT)
 
 ourcontract_rt_LDADD += -ldl
 #
@@ -501,7 +507,7 @@ include_HEADERS += script/bitcoinconsensus.h
 libbitcoinconsensus_la_SOURCES = $(crypto_libbitcoin_crypto_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)
 
 if GLIBC_BACK_COMPAT
-  libbitcoinconsensus_la_SOURCES += compat/glibc_compat.cpp
+	libbitcoinconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
 libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
