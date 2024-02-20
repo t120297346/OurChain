@@ -20,6 +20,7 @@
 #define CHECK_RUNTIME_STATE 2
 #define GET_PRE_TXID_STATE 3
 #define CONTRACT_DAEMON 4
+#define CONTRACT_DAEMON_CLIENT 5
 
 extern std::queue<int> cont_daemon_q;
 

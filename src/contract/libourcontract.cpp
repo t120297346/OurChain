@@ -276,7 +276,7 @@ std::string get_pre_txid()
 }
 
 /* Contract daemon */
-std::string contract_daemon(int (&cont_pid)[2])
+std::string contract_daemon()
 {
     /* Send command */
     int flag = CONTRACT_DAEMON;
@@ -296,13 +296,11 @@ std::string contract_daemon(int (&cont_pid)[2])
     pid_t pid;
     pid = fork();
     if (pid != 0) {
-        int flag = CONTRACT_DAEMON;
         if (fwrite((void*)&pid, sizeof(int), 1, out) <= 0) {
             err_printf("contract_daemon: write pid failed\n");
             return "";
         }
         fflush(out);
-        cont_pid[0] = pid;
     }
 
     /* An error occurred */
@@ -311,7 +309,7 @@ std::string contract_daemon(int (&cont_pid)[2])
     /* Success: Let the parent terminate */
     if (pid > 0)
         return std::string("parent");
-       exit(EXIT_SUCCESS);
+        //exit(EXIT_SUCCESS);
 
     /* On success: The child process becomes session leader */
     if (setsid() < 0)
@@ -352,6 +350,36 @@ std::string contract_daemon(int (&cont_pid)[2])
     for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
         close (x);
     
+    return std::string(buf);
+}
+
+std::string daemon_client(std::string cmd)
+{
+    if (cmd.length() > 50) {
+        err_printf("CONTRACT_DAEMON_CLIENT: command too longr\n");
+    }
+
+    /* Send command */
+    int flag = CONTRACT_DAEMON_CLIENT;
+    if (fwrite((void*)&flag, sizeof(int), 1, out) <= 0) {
+        err_printf("CONTRACT_DAEMON_CLIENT: write control code error\n");
+        return "";
+    }
+    fflush(out);
+
+    if (fwrite((void*)cmd.c_str(), sizeof(char) * 50, 1, out) <= 0) {
+        err_printf("CONTRACT_DAEMON_CLIENT: send command error\n");
+        return "";
+    }
+    fflush(out);
+
+    char buf[151];
+    int ret = fread((void*)&buf, sizeof(char) * 150, 1, in);
+    if (ret <= 0) {
+        err_printf("CONTRACT_DAEMON_CLIENT: read result error\n");
+        return "";
+    }
+
     return std::string(buf);
 }
 

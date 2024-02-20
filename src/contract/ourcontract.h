@@ -13,6 +13,7 @@
 #define CHECK_RUNTIME_STATE 2
 #define GET_PRE_TXID_STATE 3
 #define CONTRACT_DAEMON 4
+#define CONTRACT_DAEMON_CLIENT 5
 
 #include <json.hpp>
 #include <stdbool.h>
@@ -51,7 +52,8 @@ json pre_state_read();
 std::string get_pre_txid();
 
 /* Contract daemon */
-std::string contract_daemon(int (&cont_pid)[2]);
+std::string contract_daemon();
+std::string daemon_client(std::string cmd);
 void daemon_log(FILE* f, const char* format, ...);
 
 /* shortcut for return general interface */

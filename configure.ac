@@ -84,14 +84,15 @@ AC_PATH_TOOL(STRIP, strip)
 AC_PATH_TOOL(GCOV, gcov)
 AC_PATH_PROG(LCOV, lcov)
 dnl For ZoKrates
-AC_CHECK_PROG(CARGO, [cargo], [yes], [no])
-AS_IF(test x$CARGO = xno,
-    AC_MSG_ERROR([cargo is required])
-)
-AC_CHECK_PROG(RUSTC, [rustc], [yes], [no])
-AS_IF(test x$RUSTC = xno,
-    AC_MSG_ERROR([rustc is required])
-)
+#AC_CHECK_PROG(CARGO, [cargo], [yes], [no])
+#if test x$CARGO = xno; then
+#    AC_MSG_ERROR([cargo is required])
+#fi
+#
+#AC_CHECK_PROG(RUSTC, [rustc], [yes], [no])
+#if test x$RUSTC = xno; then
+#    AC_MSG_ERROR([rustc is required])
+#fi
 dnl Python 3.x is supported from 3.4 on (see https://github.com/bitcoin/bitcoin/issues/7893)
 AC_PATH_PROGS([PYTHON], [python3.6 python3.5 python3.4 python3 python2.7 python2 python])
 AC_PATH_PROG(GENHTML, genhtml)
