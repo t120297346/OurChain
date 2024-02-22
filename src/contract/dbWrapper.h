@@ -3,7 +3,7 @@
 
 #include "util.h"
 #include <boost/thread/shared_mutex.hpp>
-#include <leveldb/db.h>
+#include <rocksdb/db.h>
 #include <string>
 #include <vector>
 
@@ -14,9 +14,9 @@ extern boost::mutex tmp_contract_state_access;
 class ContractDBWrapper
 {
 private:
-    leveldb::DB* db;
-    leveldb::Status mystatus;
-    leveldb::WriteOptions writeOptions;
+    rocksdb::DB* db;
+    rocksdb::Status mystatus;
+    rocksdb::WriteOptions writeOptions;
 
     fs::path getContractDBPath(std::string name)
     {
@@ -32,13 +32,13 @@ private:
 public:
     const fs::path CheckPointPath = GetDataDir() / "contracts" / "checkPoint";
     // pre db operation status
-    leveldb::Status getStatus();
+    rocksdb::Status getStatus();
     // is pre db operation ok
     bool isOk();
     // set critical save (directly write to disk)
     void setCriticalSave();
     // get iterator, for custom operation on database
-    leveldb::Iterator* getIterator();
+    rocksdb::Iterator* getIterator();
     // connect contract DB
     ContractDBWrapper(std::string name);
     // connrct to check point db

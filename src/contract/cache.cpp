@@ -69,7 +69,7 @@ uint256 BlockCache::getBlockHash(int blockHeight)
 }
 BlockCache::blockIndex BlockCache::getHeighestBlock()
 {
-    leveldb::Iterator* it = dbWrapper->getIterator();
+    rocksdb::Iterator* it = dbWrapper->getIterator();
     // 定位到数据库的最后一个条目
     it->SeekToLast();
     if (it->Valid() == false) {

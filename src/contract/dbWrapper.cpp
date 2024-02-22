@@ -4,21 +4,21 @@ boost::mutex tmp_contract_state_access;
 
 ContractDBWrapper::ContractDBWrapper(std::string name)
 {
-    leveldb::Options options;
+    rocksdb::Options options;
     options.create_if_missing = true;
     fs::path path = getContractDBPath(name);
     TryCreateDirectories(path);
-    mystatus = leveldb::DB::Open(options, path.string(), &db);
+    mystatus = rocksdb::DB::Open(options, path.string(), &db);
     assert(mystatus.ok());
 }
 
 ContractDBWrapper::ContractDBWrapper(std::string checkPointBlockHash, bool isCheckPoint)
 {
     assert(isCheckPoint);
-    leveldb::Options options;
+    rocksdb::Options options;
     options.create_if_missing = false;
     fs::path path = getContractCheckPointPath(checkPointBlockHash);
-    mystatus = leveldb::DB::Open(options, path.string(), &db);
+    mystatus = rocksdb::DB::Open(options, path.string(), &db);
     assert(mystatus.ok());
 }
 
@@ -28,7 +28,7 @@ ContractDBWrapper::~ContractDBWrapper()
     db = nullptr;
 }
 
-leveldb::Status ContractDBWrapper::getStatus()
+rocksdb::Status ContractDBWrapper::getStatus()
 {
     return mystatus;
 }
@@ -41,15 +41,15 @@ void ContractDBWrapper::setCriticalSave()
 {
     writeOptions.sync = true;
 }
-leveldb::Iterator* ContractDBWrapper::getIterator()
+rocksdb::Iterator* ContractDBWrapper::getIterator()
 {
-    return db->NewIterator(leveldb::ReadOptions());
+    return db->NewIterator(rocksdb::ReadOptions());
 }
 
 void ContractDBWrapper::transferAllState(ContractDBWrapper& target)
 {
     target.clearAllStates();
-    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         target.setState(it->key().ToString(), it->value().ToString());
     }
@@ -59,24 +59,24 @@ void ContractDBWrapper::transferAllState(ContractDBWrapper& target)
 std::string ContractDBWrapper::getState(std::string key)
 {
     std::string value;
-    mystatus = db->Get(leveldb::ReadOptions(), key, &value);
+    mystatus = db->Get(rocksdb::ReadOptions(), key, &value);
     return value;
 }
 
 void ContractDBWrapper::setState(std::string key, std::string value)
 {
-    mystatus = db->Put(leveldb::WriteOptions(), key, value);
+    mystatus = db->Put(rocksdb::WriteOptions(), key, value);
 }
 
 void ContractDBWrapper::deleteState(std::string key)
 {
-    mystatus = db->Delete(leveldb::WriteOptions(), key);
+    mystatus = db->Delete(rocksdb::WriteOptions(), key);
 }
 
 std::map<std::string, std::string> ContractDBWrapper::getAllStates()
 {
     std::map<std::string, std::string> states;
-    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         states[it->key().ToString()] = it->value().ToString();
     }
@@ -96,15 +96,15 @@ void ContractDBWrapper::clearAllStates()
 
 void ContractDBWrapper::saveDuplicateState(fs::path path)
 {
-    leveldb::DB* newdb;
-    leveldb::Options options;
+    rocksdb::DB* newdb;
+    rocksdb::Options options;
     options.create_if_missing = true;
     boost::mutex::scoped_lock lock(tmp_contract_state_access);
-    leveldb::Status status = leveldb::DB::Open(options, path.string(), &newdb);
+    rocksdb::Status status = rocksdb::DB::Open(options, path.string(), &newdb);
     assert(status.ok());
-    leveldb::WriteOptions writeOptions;
+    rocksdb::WriteOptions writeOptions;
     writeOptions.sync = true;
-    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    rocksdb::Iterator* it = db->NewIterator(rocksdb::ReadOptions());
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         status = newdb->Put(writeOptions, it->key(), it->value());
         if (!status.ok()) {
