@@ -17,6 +17,7 @@ RUN apt-get install autoconf automake -y
 #install rocksdb (constract db)
 RUN apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
 RUN cd ~ && git clone https://github.com/facebook/rocksdb.git && cd rocksdb && make shared_lib && make install-shared
+RUN cd ~ && rm -rf rocksdb
 
 # git clone ourchain
 ARG REPO_URL=https://github.com/leon123858/OurChain.git
