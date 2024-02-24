@@ -411,18 +411,20 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
     // handle contract
     if (!request.params[2].isNull()) {
         UniValue contractParameter = request.params[2].get_obj();
-        rawTx.contract.action = contractParameter["action"].get_int();
-        rawTx.contract.code = contractParameter["code"].get_str();
-        for (unsigned i = 0; i < contractParameter["args"].size(); i++)
-            rawTx.contract.args.push_back(contractParameter["args"][i].get_str());
-        if (rawTx.contract.action == contract_action::ACTION_NEW)
-            rawTx.contract.address = rawTx.GetHash();
-        else if (rawTx.contract.action == contract_action::ACTION_CALL)
-            rawTx.contract.address.SetHex(contractParameter["address"].get_str());
-        else if (rawTx.contract.action == contract_action::ACTION_NONE)
-            rawTx.contract.address = uint256();
-        else
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, contract action is out of range");
+        if (!contractParameter.empty()) {
+            rawTx.contract.action = contractParameter["action"].get_int();
+            rawTx.contract.code = contractParameter["code"].get_str();
+            for (unsigned i = 0; i < contractParameter["args"].size(); i++)
+                rawTx.contract.args.push_back(contractParameter["args"][i].get_str());
+            if (rawTx.contract.action == contract_action::ACTION_NEW)
+                rawTx.contract.address = rawTx.GetHash();
+            else if (rawTx.contract.action == contract_action::ACTION_CALL)
+                rawTx.contract.address.SetHex(contractParameter["address"].get_str());
+            else if (rawTx.contract.action == contract_action::ACTION_NONE)
+                rawTx.contract.address = uint256();
+            else
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, contract action is out of range");
+        }
     }
 
     if (!request.params[4].isNull() && rbfOptIn != SignalsOptInRBF(rawTx)) {
