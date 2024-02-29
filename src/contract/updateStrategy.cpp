@@ -104,7 +104,7 @@ bool UpdateStrategyRollback::UpdateSnapShot(ContractStateCache& cache, SnapShot&
         uint256 hash = pindex->GetBlockHash();
         if (cache.getSnapShot()->isCheckPointExist(hash.ToString())) {
             // find closest check point
-            auto newDB = ContractDBWrapper(hash.ToString(), true);
+            auto newDB = ContractDBWrapper(hash.ToString(), "checkPoint");
             newDB.transferAllState(*cache.getSnapShot()->getDBWrapper());
             // check heigh same
             auto newBlockIndex = cache.getBlockCache()->getHeighestBlock();

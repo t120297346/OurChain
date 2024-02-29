@@ -1,6 +1,6 @@
 #include "contract/dbWrapper.h"
 
-boost::mutex tmp_contract_state_access;
+std::shared_mutex tmp_contract_db_mutex;
 
 ContractDBWrapper::ContractDBWrapper(std::string name)
 {
@@ -12,13 +12,20 @@ ContractDBWrapper::ContractDBWrapper(std::string name)
     assert(mystatus.ok());
 }
 
-ContractDBWrapper::ContractDBWrapper(std::string checkPointBlockHash, bool isCheckPoint)
+ContractDBWrapper::ContractDBWrapper(std::string name, std::string mode)
 {
-    assert(isCheckPoint);
+    assert(mode == "readOnly" || mode == "checkPoint");
     rocksdb::Options options;
-    options.create_if_missing = false;
-    fs::path path = getContractCheckPointPath(checkPointBlockHash);
-    mystatus = rocksdb::DB::Open(options, path.string(), &db);
+    if (mode == "readOnly") {
+        options.IncreaseParallelism();
+        options.OptimizeLevelStyleCompaction();
+        fs::path path = getContractDBPath(name);
+        mystatus = rocksdb::DB::OpenForReadOnly(options, path.string(), &db);
+    } else if (mode == "checkPoint") {
+        options.create_if_missing = false;
+        fs::path path = getContractCheckPointPath(name);
+        mystatus = rocksdb::DB::Open(options, path.string(), &db);
+    }
     assert(mystatus.ok());
 }
 
@@ -99,7 +106,7 @@ void ContractDBWrapper::saveDuplicateState(fs::path path)
     rocksdb::DB* newdb;
     rocksdb::Options options;
     options.create_if_missing = true;
-    boost::mutex::scoped_lock lock(tmp_contract_state_access);
+    WriteLock w_lock(tmp_contract_db_mutex);
     rocksdb::Status status = rocksdb::DB::Open(options, path.string(), &newdb);
     assert(status.ok());
     rocksdb::WriteOptions writeOptions;
@@ -113,6 +120,7 @@ void ContractDBWrapper::saveDuplicateState(fs::path path)
             assert(false);
         }
     }
+    w_lock.unlock();
     delete it;
     delete newdb;
 }

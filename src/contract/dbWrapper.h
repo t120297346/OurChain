@@ -8,8 +8,11 @@
 #include <vector>
 
 #include <boost/thread/shared_mutex.hpp>
+#include <shared_mutex>
+typedef std::unique_lock<std::shared_mutex> WriteLock;
+typedef std::shared_lock<std::shared_mutex> ReadLock;
 
-extern boost::mutex tmp_contract_state_access;
+extern std::shared_mutex tmp_contract_db_mutex;
 
 class ContractDBWrapper
 {
@@ -41,8 +44,8 @@ public:
     rocksdb::Iterator* getIterator();
     // connect contract DB
     ContractDBWrapper(std::string name);
-    // connrct to check point db
-    ContractDBWrapper(std::string checkPointBlockHash, bool isCheckPoint);
+    // connect read only contract DB (mode should be "readOnly", "checkPoint")
+    ContractDBWrapper(std::string name, std::string mode);
     // disconnect contract DB
     ~ContractDBWrapper();
 
