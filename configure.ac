@@ -1232,6 +1232,12 @@ AC_SUBST(BITCOIN_GUI_NAME)
 AC_SUBST(BITCOIN_CLI_NAME)
 AC_SUBST(BITCOIN_TX_NAME)
 
+# Contract
+ROCKSDB_CPPFLAGS="$CPPFLAGS -I/usr/local/include"
+ROCKSDB_LDFLAGS="$LDFLAGS -L/usr/local/lib -lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy -llz4 -lzstd"
+AC_SUBST(ROCKSDB_CPPFLAGS)
+AC_SUBST(ROCKSDB_LDFLAGS)
+
 AC_SUBST(RELDFLAGS)
 AC_SUBST(ERROR_CXXFLAGS)
 AC_SUBST(HARDENED_CXXFLAGS)
@@ -1339,4 +1345,4 @@ echo "  CXX           = $CXX"
 echo "  CXXFLAGS      = $CXXFLAGS"
 echo "  LDFLAGS       = $LDFLAGS"
 echo "  ARFLAGS       = $ARFLAGS"
-echo 
+echo

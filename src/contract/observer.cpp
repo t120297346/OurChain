@@ -24,12 +24,11 @@ bool ContractObserver::onChainStateSet(CChain& chainActive, const Consensus::Par
         if (isSaveCheckPointNow(curHeight)) {
             cache->saveCheckPoint();
         }
-        if (isSaveReadReplicaNow(curHeight)) {
-            cache->saveTmpState();
-        }
     }
+    // save tmp state
+    cache->getSnapShot()->getDBWrapper()->saveTmpState();
     if (isClearCheckPointNow(curHeight)) {
-        cache->clearCheckPoint(10);
+        cache->clearCheckPoint(5);
     }
     return true;
 }
@@ -41,16 +40,11 @@ bool ContractObserver::isSaveCheckPointNow(int height)
     return true;
 }
 
-bool ContractObserver::isSaveReadReplicaNow(int height)
-{
-    return true;
-}
-
 bool ContractObserver::isClearCheckPointNow(int height)
 {
     if (height == 0)
         return false;
-    if (height % 10 == 0)
+    if (height % 5 == 0)
         return true;
     return false;
 }
