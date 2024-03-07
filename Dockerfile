@@ -49,3 +49,6 @@ RUN echo -e "server=1\nrpcuser=test\nrpcpassword=test\nrpcport=8332\nrpcallowip=
 
 # compile
 RUN make -j8 && make install && ldconfig
+
+# run (only for production)
+# ENTRYPOINT ["bitcoind", "--regtest", "-txindex"]
