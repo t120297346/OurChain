@@ -19,11 +19,17 @@ ContractDBWrapper::ContractDBWrapper(std::string name, std::string mode)
     assert(mode == "readOnly");
     fs::path path;
     rocksdb::Options options;
+    path = getContractDBPath(name);
     if (mode == "readOnly") {
         options.IncreaseParallelism();
         options.OptimizeLevelStyleCompaction();
-        path = getContractDBPath(name);
         mystatus = rocksdb::DB::OpenForReadOnly(options, path.string(), &db);
+    }
+    if (!mystatus.ok()) {
+        TryCreateDirectories(path);
+        rocksdb::Options newOptions;
+        newOptions.create_if_missing = true;
+        mystatus = rocksdb::DB::Open(newOptions, path.string(), &db);
     }
     assert(mystatus.ok());
     this->curPath = path.string();
